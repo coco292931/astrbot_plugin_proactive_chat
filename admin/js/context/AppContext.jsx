@@ -27,6 +27,10 @@ const initialState = {
         last_sync_at: '',
         total_count: 0,
     },
+    // Markdown 文档浏览页的文件目录、当前文档与选中路径。
+    markdownFiles: [],
+    markdownDocument: null,
+    selectedMarkdownPath: '',
     // 会话详情页当前选中的会话 ID。
     selectedSession: '',
     // 当前选中会话的 base / override / effective 详情。
@@ -69,6 +73,12 @@ function reducer(state, action) {
                     total_count: 0,
                 },
             };
+        case 'SET_MARKDOWN_FILES':
+            return { ...state, markdownFiles: action.payload || [] };
+        case 'SET_MARKDOWN_DOCUMENT':
+            return { ...state, markdownDocument: action.payload || null };
+        case 'SET_SELECTED_MARKDOWN_PATH':
+            return { ...state, selectedMarkdownPath: action.payload || '' };
         case 'SET_SELECTED_SESSION':
             return { ...state, selectedSession: action.payload || '' };
         case 'SET_SESSION_DETAIL':

@@ -36,6 +36,14 @@ function useApi() {
     );
 
     const listJobs = React.useCallback(() => window.HttpUtil.get('/api/jobs'), []);
+    const listMarkdownFiles = React.useCallback(
+        () => window.HttpUtil.get('/api/markdown-files'),
+        []
+    );
+    const getMarkdownFile = React.useCallback(
+        (path) => window.HttpUtil.get(`/api/markdown-files/${encodeURIComponent(path)}`),
+        []
+    );
     const getNotifications = React.useCallback(
         () => window.HttpUtil.get('/api/notifications'),
         []
@@ -74,6 +82,8 @@ function useApi() {
             updateSessionConfig,
             resetSessionConfig,
             listJobs,
+            listMarkdownFiles,
+            getMarkdownFile,
             getNotifications,
             readNotification,
             readAllNotifications,
@@ -91,6 +101,8 @@ function useApi() {
             updateSessionConfig,
             resetSessionConfig,
             listJobs,
+            listMarkdownFiles,
+            getMarkdownFile,
             getNotifications,
             readNotification,
             readAllNotifications,

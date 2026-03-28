@@ -200,6 +200,8 @@ function App() {
                 return <TasksView onRefresh={loadAll} />;
             case 'notifications':
                 return <NotificationsView onRefresh={loadAll} />;
+            case 'docs':
+                return <MarkdownDocsView />;
             default:
                 return <StatusView onRefresh={loadAll} />;
         }

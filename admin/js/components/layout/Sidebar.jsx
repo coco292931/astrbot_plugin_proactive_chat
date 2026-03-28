@@ -50,6 +50,7 @@ function Sidebar({ currentView, onChange }) {
         { key: 'status', label: '运行状态', icon: '📊' },
         { key: 'tasks', label: '任务管理', icon: '📋' },
         { key: 'notifications', label: '通知中心', icon: '🔔' },
+        { key: 'docs', label: '文档浏览', icon: '📚' },
         { key: 'config', label: '配置管理', icon: '⚙️' },
     ];
 
