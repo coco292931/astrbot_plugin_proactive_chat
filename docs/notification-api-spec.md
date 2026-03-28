@@ -24,14 +24,15 @@
 - 响应格式：`application/json`
 - 响应主体：JSON 数组
 
-### 2.2 推荐接口路径
+### 2.2 当前接口路径与请求参数
 
 ```text
-/api/v1/{app_slug}/notifications/updates
+/api/v1/{app_slug}/notifications/updates?plugin_version={plugin_version}
 ```
 
 其中：
 
+- `plugin_version`：必填，插件当前版本号（由插件侧自动附加）
 - `{app_slug}`：外部通知平台中为某个应用分配的唯一标识
 - 对于本插件，应由插件配置或固定常量提供
 
@@ -39,15 +40,20 @@
 
 ```json
 [
-  {
-    "id": 2,
-    "app_id": 2,
-    "title": "测试喵",
-    "content": "喵喵喵喵喵",
-    "type": "TEST",
-    "created_at": "2026-03-27T09:00:20.218Z",
-    "is_active": true
-  }
+{
+"id": 2,
+"app_id": 2,
+"title": "主动消息测试",
+"content": "# 🌿 守望内心的安宁\\n\\n> 在这个信息纷扰的世界里，能够守护住内心的片刻宁静，本身就是一种**了不起的成就**。\\n\\n### 生活的节奏\\n我们不需要时刻保持**冲刺**的状态，有时候，慢下来去观察：\\n* 一朵花的**开合**\\n* 雨滴落在窗棂的**声音**\\n\\n反而能找回那份被遗忘的**生命力**。真正的力量往往不在于喧嚣，而在于那份看清前路后的**笃定与从容**。\\n\\n---\\n*生成于 2026年3月*",
+"content_format": "markdown",
+"type": "info",
+"created_at": "2026-03-28T06:36:29.831502297Z",
+"updated_at": "2026-03-28T06:41:07.159811471Z",
+"publish_at": "",
+"min_version": "",
+"max_version": "",
+"is_active": true
+}
 ]
 ```
 
@@ -59,15 +65,17 @@
 
 ### 3.1 通知对象字段说明
 
-| 字段名 | 类型 | 必填 | 说明 |
-| :-- | :-- | :-- | :-- |
-| `id` | `number` | 是 | 通知唯一 ID，用于去重、排序、已读状态映射 |
-| `app_id` | `number` | 是 | 外部通知平台中的应用 ID |
-| `title` | `string` | 是 | 通知标题 |
-| `content` | `string` | 是 | 通知正文 |
-| `type` | `string` | 是 | 通知类型代码，前端将基于此进行类型映射与样式展示 |
-| `created_at` | `string` | 是 | 通知创建时间，要求为 ISO 8601 时间字符串 |
-| `is_active` | `boolean` | 是 | 通知是否为生效状态；插件侧仅展示生效通知 |
+| 字段名              | 类型        | 必填 | 说明                                        |
+|:-----------------|:----------|:---|:------------------------------------------|
+| `id`             | `number`  | 是  | 通知唯一 ID，用于去重、排序、已读状态映射                    |
+| `app_id`         | `number`  | 是  | 外部通知平台中的应用 ID                             |
+| `title`          | `string`  | 是  | 通知标题                                      |
+| `content`        | `string`  | 是  | 通知正文                                      |
+| `content_format` | `string`  | 否  | 正文格式，支持 `text` / `markdown`；缺省按 `text` 处理 |
+| `type`           | `string`  | 是  | 通知类型代码，前端将基于此进行类型映射与样式展示                  |
+| `created_at`     | `string`  | 是  | 通知创建时间，要求为 ISO 8601 时间字符串                 |
+| `updated_at`     | `string`  | 否  | 通知更新时间，若提供应为 ISO 8601 时间字符串             |
+| `is_active`      | `boolean` | 是  | 通知是否为生效状态；插件侧仅展示生效通知                      |
 
 ### 3.2 字段约束说明
 
@@ -85,9 +93,16 @@
 
 #### `content`
 
-- 建议为纯文本
-- 可包含换行
-- 当前一期插件前端按纯文本展示，不依赖富文本能力
+- `content_format = text` 时按纯文本展示
+- `content_format = markdown` 时按 Markdown 渲染
+- 为了兼容历史数据，前端会对明显的 Markdown 块级语法（标题/引用/列表/分隔线）做自动识别渲染
+- 链接会被加上安全属性（`target="_blank"`、`rel="noopener noreferrer"`），并限制危险协议
+
+#### `content_format`
+
+- 可选值：`text`、`markdown`
+- 缺省、空值或未知值应按 `text` 处理
+- 插件后端会将 `plain` / `plaintext` 归一化为 `text`
 
 #### `type`
 
@@ -95,6 +110,11 @@
 - 插件前端不会直接展示原始代码，而会按映射表转换为可读标签
 
 #### `created_at`
+
+- 必须为可被 JavaScript `Date` 正确解析的 ISO 8601 字符串
+- 推荐使用 UTC 时间，例如：`2026-03-27T09:00:20.218Z`
+
+#### `updated_at`
 
 - 必须为可被 JavaScript `Date` 正确解析的 ISO 8601 字符串
 - 推荐使用 UTC 时间，例如：`2026-03-27T09:00:20.218Z`
@@ -212,21 +232,22 @@ const NOTIFICATION_TYPE_META = {
 
 ---
 
-## 6. 一期版本展示行为约定
+## 6. 当前版本展示行为约定
 
-当前一期版本中，插件前端通知中心应遵循以下行为：
+当前版本中，插件前端通知中心应遵循以下行为：
 
 1. 仅展示激活通知
-2. 不支持富文本渲染
-3. 不支持服务端已读同步
-4. 不支持分页
-5. 不支持按类型筛选
-6. 支持本地标记单条已读
-7. 支持本地全部标记为已读
-8. 支持显示未读数量
-9. 支持通过插件后端主动刷新远端通知
-10. 支持通过插件 WebSocket 广播实时更新
-
+2. 支持 `content_format=text` 纯文本展示
+3. 支持 `content_format=markdown` Markdown 渲染
+4. 对明显 Markdown 块级语法支持自动识别渲染（兼容历史数据）
+5. 不支持服务端已读同步
+6. 不支持分页
+7. 不支持按类型筛选
+8. 支持本地标记单条已读
+9. 支持本地全部标记为已读
+10. 支持显示未读数量
+11. 支持通过插件后端主动刷新远端通知
+12. 支持通过插件 WebSocket 广播实时更新
 ---
 
 ## 7. 后续扩展建议
@@ -264,7 +285,7 @@ const NOTIFICATION_TYPE_META = {
 只要远端继续满足以下最低条件，插件即可稳定接入：
 
 - 返回数组结构
-- 每项具备 `id`、`title`、`content`、`type`、`created_at`、`is_active`
+- 每项具备 `id`、`title`、`content`、`type`、`created_at`、`is_active`（`content_format`、`updated_at` 为可选）
 - 时间字段为合法 ISO 8601 字符串
 
 ---
@@ -277,19 +298,20 @@ const NOTIFICATION_TYPE_META = {
 2. 插件后端统一过滤 `is_active === true`
 3. 插件前端不直接展示原始 `type` 字符串
 4. 已读状态默认由插件本地管理
-5. 一期按纯文本通知实现，不混入富文本协议
+5. 优先通过 `content_format` 显式声明正文格式（`text` / `markdown`）
 6. 新增类型时，应先更新本规范，再同步更新前端映射
 
 ---
 
-## 10. 当前一期标准结论
+## 10. 当前版本标准结论
 
-当前通知系统一期标准可以总结为：
+当前通知系统标准可以总结为：
 
-- 接口：无鉴权 `GET` JSON 数组
+- 接口：无鉴权 `GET` JSON 数组，请求携带 `plugin_version`
 - 数据源：外部通知平台
 - 过滤：仅展示 `is_active === true`
 - 排序：按 `created_at` 倒序
+- 内容：支持 `text` 与 `markdown`，并兼容明显 Markdown 块级语法自动识别
 - 映射：统一由前端按标准类型表展示
 - 已读：插件本地维护
 - 广播：由插件后端通过 WebSocket 推送前端更新

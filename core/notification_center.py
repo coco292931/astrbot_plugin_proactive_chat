@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 import aiofiles
@@ -43,7 +44,7 @@ class NotificationCenter:
     # 当前通知平台基础地址硬编码，不暴露到用户配置页。
     NOTIFICATION_BASE_URL = "https://pluginpush.aloys23.link"
     # 当前插件对应的 APP_SLUG，同样按常量维护，减少误改风险。
-    NOTIFICATION_APP_SLUG = "160c1a26-1ddb-41d8-8f6a-d6992435931a"
+    NOTIFICATION_APP_SLUG = "1691ddc2-adb1-4fc4-98bc-245162396f77"
 
     def _get_settings(self) -> dict[str, Any]:
         # 只读取 notification_settings 中允许用户调整的轻量项，如启用状态与轮询间隔。
@@ -54,13 +55,47 @@ class NotificationCenter:
         # 通知系统默认开启；只有用户明确关闭时才停用轮询与同步逻辑。
         return bool(settings.get("enabled", True))
 
-    def _build_remote_url(self) -> str:
+    async def _build_remote_url(self) -> str:
         # 统一在这里拼接远端接口地址，后续若路径变更，只需修改这一处。
         base_url = self.NOTIFICATION_BASE_URL.strip().rstrip("/")
         app_slug = self.NOTIFICATION_APP_SLUG.strip().strip("/")
         if not base_url or not app_slug:
             return ""
-        return f"{base_url}/api/v1/{app_slug}/notifications/updates"
+
+        plugin_version = await self._get_plugin_version()
+        query = urlencode({"plugin_version": plugin_version})
+        return f"{base_url}/api/v1/{app_slug}/notifications/updates?{query}"
+
+    async def _get_plugin_version(self) -> str:
+        # 远端通知接口要求携带插件版本；优先复用插件实例版本，缺失时回退 metadata 文件。
+        plugin_version = (
+            getattr(self.plugin, "version", None)
+            or getattr(self.plugin, "__version__", None)
+            or ""
+        )
+        normalized = str(plugin_version).strip().lstrip("vV")
+        if normalized:
+            return normalized
+
+        try:
+            metadata_path = Path(__file__).resolve().parent.parent / "metadata.yaml"
+            metadata_text = await asyncio.to_thread(
+                metadata_path.read_text, encoding="utf-8"
+            )
+            for line in metadata_text.splitlines():
+                stripped = line.strip()
+                if stripped.startswith("version:"):
+                    value = stripped.split(":", 1)[1].strip().strip('"').strip("'")
+                    normalized = value.lstrip("vV")
+                    if normalized:
+                        return normalized
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            logger.debug(f"[主动消息] 读取插件版本失败喵: {e}")
+
+        # 最终兜底值，避免 query 参数缺失导致远端网关拒绝请求。
+        return "0.0.0"
 
     def _get_poll_interval_seconds(self) -> int:
         settings = self._get_settings()
@@ -146,6 +181,11 @@ class NotificationCenter:
         notification_type = str(raw.get("type", "")).strip().upper()
         created_at = str(raw.get("created_at", "")).strip()
         is_active = raw.get("is_active")
+        content_format = str(raw.get("content_format", "text")).strip().lower()
+        if content_format in {"plain", "plaintext"}:
+            content_format = "text"
+        if content_format not in {"text", "markdown"}:
+            content_format = "text"
 
         if (
             not title
@@ -170,6 +210,7 @@ class NotificationCenter:
             .isoformat()
             .replace("+00:00", "Z"),
             "is_active": is_active,
+            "content_format": content_format,
         }
 
     def _sort_items(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -181,7 +222,7 @@ class NotificationCenter:
 
     async def _fetch_remote_items(self) -> list[dict[str, Any]]:
         # 抽离单独的拉取函数，便于复用于“启动立即同步”和“手动刷新”。
-        url = self._build_remote_url()
+        url = await self._build_remote_url()
         if not url:
             return []
 
