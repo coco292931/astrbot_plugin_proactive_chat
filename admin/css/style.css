@@ -24,6 +24,17 @@
     --glass-border: rgba(103, 80, 164, 0.15);
     --glass-shadow: 0 4px 20px 0 rgba(103, 80, 164, 0.08);
 
+    /* Markdown 代码高亮颜色令牌，供亮暗主题统一覆写。 */
+    --md-code-token-key: #7C3AED;
+    --md-code-token-string: #047857;
+    --md-code-token-number: #B45309;
+    --md-code-token-boolean: #C026D3;
+    --md-code-token-keyword: #2563EB;
+    --md-code-token-function: #7C2D12;
+    --md-code-token-command: #4338CA;
+    --md-code-token-flag: #0F766E;
+    --md-code-token-punctuation: rgba(28, 27, 31, 0.52);
+
     --theme-transition-duration: 220ms;
     --interactive-transition-duration: 180ms;
     --theme-transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
@@ -56,6 +67,16 @@ body.dark-theme {
     --glass-bg: rgba(28, 27, 31, 0.7);
     --glass-border: rgba(208, 188, 255, 0.1);
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+
+    --md-code-token-key: #C4B5FD;
+    --md-code-token-string: #6EE7B7;
+    --md-code-token-number: #FBBF24;
+    --md-code-token-boolean: #F0ABFC;
+    --md-code-token-keyword: #93C5FD;
+    --md-code-token-function: #FDBA74;
+    --md-code-token-command: #A5B4FC;
+    --md-code-token-flag: #5EEAD4;
+    --md-code-token-punctuation: rgba(236, 231, 246, 0.56);
 }
 
 /* 首屏主题预初始化（在 React 挂载前生效，减少 FOUC） */
@@ -76,6 +97,16 @@ html.theme-dark body {
     --glass-bg: rgba(28, 27, 31, 0.7);
     --glass-border: rgba(208, 188, 255, 0.1);
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+
+    --md-code-token-key: #C4B5FD;
+    --md-code-token-string: #6EE7B7;
+    --md-code-token-number: #FBBF24;
+    --md-code-token-boolean: #F0ABFC;
+    --md-code-token-keyword: #93C5FD;
+    --md-code-token-function: #FDBA74;
+    --md-code-token-command: #A5B4FC;
+    --md-code-token-flag: #5EEAD4;
+    --md-code-token-punctuation: rgba(236, 231, 246, 0.56);
 }
 
 /* ===== 基础重置与全局交互层 ===== */
@@ -2132,40 +2163,40 @@ body.dark-theme .status-timer-info-item {
 
 .notification-md pre code .token-key,
 .notification-md pre code .token-property {
-    color: #7C3AED;
+    color: var(--md-code-token-key);
 }
 
 .notification-md pre code .token-string {
-    color: #047857;
+    color: var(--md-code-token-string);
 }
 
 .notification-md pre code .token-number {
-    color: #B45309;
+    color: var(--md-code-token-number);
 }
 
 .notification-md pre code .token-boolean {
-    color: #C026D3;
+    color: var(--md-code-token-boolean);
 }
 
 .notification-md pre code .token-keyword {
-    color: #2563EB;
+    color: var(--md-code-token-keyword);
 }
 
 .notification-md pre code .token-function {
-    color: #7C2D12;
+    color: var(--md-code-token-function);
 }
 
 .notification-md pre code .token-command {
-    color: #4338CA;
+    color: var(--md-code-token-command);
     font-weight: 800;
 }
 
 .notification-md pre code .token-flag {
-    color: #0F766E;
+    color: var(--md-code-token-flag);
 }
 
 .notification-md pre code .token-punctuation {
-    color: rgba(28, 27, 31, 0.52);
+    color: var(--md-code-token-punctuation);
 }
 
 .notification-md .notification-md-table-wrap {
@@ -2457,39 +2488,39 @@ body.dark-theme .notification-md pre code {
 
 body.dark-theme .notification-md pre code .token-key,
 body.dark-theme .notification-md pre code .token-property {
-    color: #C4B5FD;
+    color: var(--md-code-token-key);
 }
 
 body.dark-theme .notification-md pre code .token-string {
-    color: #6EE7B7;
+    color: var(--md-code-token-string);
 }
 
 body.dark-theme .notification-md pre code .token-number {
-    color: #FBBF24;
+    color: var(--md-code-token-number);
 }
 
 body.dark-theme .notification-md pre code .token-boolean {
-    color: #F0ABFC;
+    color: var(--md-code-token-boolean);
 }
 
 body.dark-theme .notification-md pre code .token-keyword {
-    color: #93C5FD;
+    color: var(--md-code-token-keyword);
 }
 
 body.dark-theme .notification-md pre code .token-function {
-    color: #FDBA74;
+    color: var(--md-code-token-function);
 }
 
 body.dark-theme .notification-md pre code .token-command {
-    color: #A5B4FC;
+    color: var(--md-code-token-command);
 }
 
 body.dark-theme .notification-md pre code .token-flag {
-    color: #5EEAD4;
+    color: var(--md-code-token-flag);
 }
 
 body.dark-theme .notification-md pre code .token-punctuation {
-    color: rgba(236, 231, 246, 0.56);
+    color: var(--md-code-token-punctuation);
 }
 
 body.dark-theme .notification-md .notification-md-table-wrap {

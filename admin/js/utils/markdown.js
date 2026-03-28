@@ -24,6 +24,18 @@ const MARKDOWN_CODE_LANGUAGE_LABELS = {
     plaintext: 'Text',
 };
 
+const MARKDOWN_SANITIZE_OPTIONS = {
+    // 白名单只开放管理端实际需要的 Markdown 标签，减少攻击面。
+    ALLOWED_TAGS: [
+        'a', 'blockquote', 'br', 'code', 'del', 'div', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'hr', 'img', 'li', 'ol', 'p', 'pre', 'span', 'strong', 'table', 'tbody', 'td', 'th', 'thead', 'tr', 'ul'
+    ],
+    ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'data-language', 'src', 'alt', 'title', 'width', 'height', 'align'],
+    FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form'],
+    FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'onmouseover', 'onfocus'],
+    RETURN_DOM_FRAGMENT: true,
+};
+
 function normalizeMarkdownContent(content) {
     return String(content || '')
         // 兼容真实换行与被序列化成字符串字面量的“\n”。
@@ -69,6 +81,15 @@ function getSafeMarkdownLinkHref(href) {
         return value;
     }
     return '#';
+}
+
+function getSafeMarkdownImageSrc(src) {
+    const value = String(src || '').trim();
+    // 图片仅放行 http(s) 与站内相对路径，避免 data/javascript/blob 等协议带来的注入或追踪风险。
+    if (/^https?:\/\//i.test(value) || value.startsWith('/') || value.startsWith('./') || value.startsWith('../')) {
+        return value;
+    }
+    return '';
 }
 
 function highlightMarkdownCode(code, language) {
@@ -130,15 +151,57 @@ function buildMarkdownCodeBlockHtml(code, language) {
     ].join('');
 }
 
-function applyInlineMarkdownTokens(text) {
+function extractInlineCodePlaceholders(text) {
     const placeholders = [];
-    let output = String(text || '');
+    let output = '';
+    const source = String(text || '');
+    let index = 0;
 
-    output = output.replace(/`([^`]+)`/g, (_, code) => {
+    while (index < source.length) {
+        const char = source[index];
+        const prevChar = index > 0 ? source[index - 1] : '';
+        if (char !== '`' || prevChar === '\\') {
+            output += char;
+            index += 1;
+            continue;
+        }
+
+        let fenceLength = 1;
+        while (source[index + fenceLength] === '`') {
+            fenceLength += 1;
+        }
+        const fence = '`'.repeat(fenceLength);
+        const searchStart = index + fenceLength;
+        const closingIndex = source.indexOf(fence, searchStart);
+        if (closingIndex === -1) {
+            output += fence;
+            index = searchStart;
+            continue;
+        }
+
+        const code = source.slice(searchStart, closingIndex);
+        if (!code) {
+            output += fence + fence;
+            index = closingIndex + fenceLength;
+            continue;
+        }
+
         // 先把内联 code 提取成占位符，避免后续粗粒度正则误伤其中内容。
-        const index = placeholders.push(`<code>${escapeMarkdownHtml(code)}</code>`) - 1;
-        return `@@INLINE_CODE_${index}@@`;
-    });
+        const placeholderIndex = placeholders.push(`<code>${escapeMarkdownHtml(code)}</code>`) - 1;
+        output += `@@INLINE_CODE_${placeholderIndex}@@`;
+        index = closingIndex + fenceLength;
+    }
+
+    return { output, placeholders };
+}
+
+function restoreInlineCodePlaceholders(text, placeholders) {
+    return String(text || '').replace(/@@INLINE_CODE_(\d+)@@/g, (_, index) => placeholders[Number(index)] || '');
+}
+
+function applyInlineMarkdownTokens(text) {
+    const extracted = extractInlineCodePlaceholders(text);
+    let output = extracted.output;
 
     output = output.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) => {
         const safeHref = getSafeMarkdownLinkHref(href);
@@ -151,7 +214,51 @@ function applyInlineMarkdownTokens(text) {
     output = output.replace(/(^|[^_])_([^_]+)_(?!_)/g, '$1<em>$2</em>');
     output = output.replace(/~~([^~]+)~~/g, '<del>$1</del>');
 
-    return output.replace(/@@INLINE_CODE_(\d+)@@/g, (_, index) => placeholders[Number(index)] || '');
+    return restoreInlineCodePlaceholders(output, extracted.placeholders);
+}
+
+function renderInlineMarkdownText(text) {
+    return applyInlineMarkdownTokens(escapeMarkdownHtml(text));
+}
+
+function splitMarkdownTableCells(line) {
+    const trimmed = String(line || '').trim().replace(/^\|/, '').replace(/\|$/, '');
+    return trimmed.split('|').map((cell) => cell.trim());
+}
+
+function flushMarkdownParagraph(paragraphBuffer, htmlParts) {
+    if (!paragraphBuffer.length) return [];
+    const safeText = paragraphBuffer
+        .map((line) => renderInlineMarkdownText(line))
+        .join('<br />');
+    htmlParts.push(`<p>${safeText}</p>`);
+    return [];
+}
+
+function closeMarkdownList(listState, htmlParts) {
+    if (!listState) return null;
+    htmlParts.push(`</${listState}>`);
+    return null;
+}
+
+function flushMarkdownBlockquote(blockquoteBuffer, htmlParts) {
+    if (!blockquoteBuffer.length) return [];
+    // 引用块递归复用同一渲染器，避免另外维护一套局部语法分支。
+    const quoteHtml = fallbackRenderMarkdownHtml(blockquoteBuffer.join('\n'));
+    htmlParts.push(`<blockquote>${quoteHtml}</blockquote>`);
+    return [];
+}
+
+function flushMarkdownTable(tableHeader, tableRows, htmlParts) {
+    if (!tableHeader) {
+        return { tableHeader: null, tableRows: [] };
+    }
+    const headCells = tableHeader.map((cell) => `<th>${renderInlineMarkdownText(cell)}</th>`).join('');
+    const bodyRows = tableRows
+        .map((row) => `<tr>${row.map((cell) => `<td>${renderInlineMarkdownText(cell)}</td>`).join('')}</tr>`)
+        .join('');
+    htmlParts.push(`<div class="notification-md-table-wrap"><table><thead><tr>${headCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>`);
+    return { tableHeader: null, tableRows: [] };
 }
 
 function fallbackRenderMarkdownHtml(md) {
@@ -164,45 +271,6 @@ function fallbackRenderMarkdownHtml(md) {
     let codeFence = null;
     let tableHeader = null;
     let tableRows = [];
-
-    const flushParagraph = () => {
-        if (!paragraphBuffer.length) return;
-        const safeText = paragraphBuffer
-            .map((line) => applyInlineMarkdownTokens(escapeMarkdownHtml(line)))
-            .join('<br />');
-        htmlParts.push(`<p>${safeText}</p>`);
-        paragraphBuffer = [];
-    };
-
-    const closeList = () => {
-        if (!listState) return;
-        htmlParts.push(`</${listState}>`);
-        listState = null;
-    };
-
-    const flushBlockquote = () => {
-        if (!blockquoteBuffer.length) return;
-        // 引用块递归复用同一渲染器，避免另外维护一套局部语法分支。
-        const quoteHtml = fallbackRenderMarkdownHtml(blockquoteBuffer.join('\n'));
-        htmlParts.push(`<blockquote>${quoteHtml}</blockquote>`);
-        blockquoteBuffer = [];
-    };
-
-    const flushTable = () => {
-        if (!tableHeader) return;
-        const headCells = tableHeader.map((cell) => `<th>${applyInlineMarkdownTokens(escapeMarkdownHtml(cell))}</th>`).join('');
-        const bodyRows = tableRows
-            .map((row) => `<tr>${row.map((cell) => `<td>${applyInlineMarkdownTokens(escapeMarkdownHtml(cell))}</td>`).join('')}</tr>`)
-            .join('');
-        htmlParts.push(`<div class="notification-md-table-wrap"><table><thead><tr>${headCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>`);
-        tableHeader = null;
-        tableRows = [];
-    };
-
-    const splitTableCells = (line) => {
-        const trimmed = String(line || '').trim().replace(/^\|/, '').replace(/\|$/, '');
-        return trimmed.split('|').map((cell) => cell.trim());
-    };
 
     for (let index = 0; index < lines.length; index += 1) {
         const rawLine = lines[index];
@@ -221,10 +289,10 @@ function fallbackRenderMarkdownHtml(md) {
         }
 
         if (/^```/.test(trimmed)) {
-            flushParagraph();
-            closeList();
-            flushBlockquote();
-            flushTable();
+            paragraphBuffer = flushMarkdownParagraph(paragraphBuffer, htmlParts);
+            listState = closeMarkdownList(listState, htmlParts);
+            blockquoteBuffer = flushMarkdownBlockquote(blockquoteBuffer, htmlParts);
+            ({ tableHeader, tableRows } = flushMarkdownTable(tableHeader, tableRows, htmlParts));
             codeFence = {
                 // ``` 后方内容作为语言名，例如 ```js。
                 language: trimmed.slice(3).trim(),
@@ -236,29 +304,29 @@ function fallbackRenderMarkdownHtml(md) {
         const tableSeparator = /^\|?(\s*:?-{3,}:?\s*\|)+\s*:?-{3,}:?\|?$/.test(trimmed);
         if (tableHeader && !tableSeparator && trimmed.includes('|')) {
             // 表头建立后，连续的“含竖线行”都会被视作表格正文。
-            tableRows.push(splitTableCells(trimmed));
+            tableRows.push(splitMarkdownTableCells(trimmed));
             continue;
         }
         if (tableHeader && (!trimmed || !trimmed.includes('|'))) {
-            flushTable();
+            ({ tableHeader, tableRows } = flushMarkdownTable(tableHeader, tableRows, htmlParts));
         }
 
         if (!trimmed) {
             // 空行会触发段落 / 列表 / 引用 / 表格等块级结构的结算。
-            flushParagraph();
-            closeList();
-            flushBlockquote();
-            flushTable();
+            paragraphBuffer = flushMarkdownParagraph(paragraphBuffer, htmlParts);
+            listState = closeMarkdownList(listState, htmlParts);
+            blockquoteBuffer = flushMarkdownBlockquote(blockquoteBuffer, htmlParts);
+            ({ tableHeader, tableRows } = flushMarkdownTable(tableHeader, tableRows, htmlParts));
             continue;
         }
 
         const nextLine = String(lines[index + 1] || '').trim();
         if (!tableHeader && trimmed.includes('|') && /^\|?(\s*:?-{3,}:?\s*\|)+\s*:?-{3,}:?\|?$/.test(nextLine)) {
-            flushParagraph();
-            closeList();
-            flushBlockquote();
+            paragraphBuffer = flushMarkdownParagraph(paragraphBuffer, htmlParts);
+            listState = closeMarkdownList(listState, htmlParts);
+            blockquoteBuffer = flushMarkdownBlockquote(blockquoteBuffer, htmlParts);
             // 当前行认定为表头，下一行是分隔线，因此这里手动跳过一行。
-            tableHeader = splitTableCells(trimmed);
+            tableHeader = splitMarkdownTableCells(trimmed);
             tableRows = [];
             index += 1;
             continue;
@@ -266,20 +334,20 @@ function fallbackRenderMarkdownHtml(md) {
 
         const heading = trimmed.match(/^(#{1,6})\s+(.+)$/);
         if (heading) {
-            flushParagraph();
-            closeList();
-            flushBlockquote();
-            flushTable();
+            paragraphBuffer = flushMarkdownParagraph(paragraphBuffer, htmlParts);
+            listState = closeMarkdownList(listState, htmlParts);
+            blockquoteBuffer = flushMarkdownBlockquote(blockquoteBuffer, htmlParts);
+            ({ tableHeader, tableRows } = flushMarkdownTable(tableHeader, tableRows, htmlParts));
             const level = heading[1].length;
-            htmlParts.push(`<h${level}>${applyInlineMarkdownTokens(escapeMarkdownHtml(heading[2]))}</h${level}>`);
+            htmlParts.push(`<h${level}>${renderInlineMarkdownText(heading[2])}</h${level}>`);
             continue;
         }
 
         if (/^---+$/.test(trimmed) || /^\*\*\*+$/.test(trimmed)) {
-            flushParagraph();
-            closeList();
-            flushBlockquote();
-            flushTable();
+            paragraphBuffer = flushMarkdownParagraph(paragraphBuffer, htmlParts);
+            listState = closeMarkdownList(listState, htmlParts);
+            blockquoteBuffer = flushMarkdownBlockquote(blockquoteBuffer, htmlParts);
+            ({ tableHeader, tableRows } = flushMarkdownTable(tableHeader, tableRows, htmlParts));
             htmlParts.push('<hr />');
             continue;
         }
@@ -287,43 +355,43 @@ function fallbackRenderMarkdownHtml(md) {
         const quote = line.match(/^>\s?(.*)$/);
         if (quote) {
             // 相邻引用行会累积到同一 buffer，最终递归渲染为一个 blockquote。
-            flushParagraph();
-            closeList();
-            flushTable();
+            paragraphBuffer = flushMarkdownParagraph(paragraphBuffer, htmlParts);
+            listState = closeMarkdownList(listState, htmlParts);
+            ({ tableHeader, tableRows } = flushMarkdownTable(tableHeader, tableRows, htmlParts));
             blockquoteBuffer.push(quote[1]);
             continue;
         }
-        flushBlockquote();
+        blockquoteBuffer = flushMarkdownBlockquote(blockquoteBuffer, htmlParts);
 
         const unorderedItem = trimmed.match(/^[-*+]\s+(.+)$/);
         const orderedItem = trimmed.match(/^\d+\.\s+(.+)$/);
         const listType = unorderedItem ? 'ul' : orderedItem ? 'ol' : null;
         if (listType) {
-            flushParagraph();
-            flushTable();
+            paragraphBuffer = flushMarkdownParagraph(paragraphBuffer, htmlParts);
+            ({ tableHeader, tableRows } = flushMarkdownTable(tableHeader, tableRows, htmlParts));
             if (listState && listState !== listType) {
-                closeList();
+                listState = closeMarkdownList(listState, htmlParts);
             }
             if (!listState) {
                 htmlParts.push(`<${listType}>`);
                 listState = listType;
             }
             const listContent = unorderedItem ? unorderedItem[1] : orderedItem[1];
-            htmlParts.push(`<li>${applyInlineMarkdownTokens(escapeMarkdownHtml(listContent))}</li>`);
+            htmlParts.push(`<li>${renderInlineMarkdownText(listContent)}</li>`);
             continue;
         }
 
-        closeList();
-        flushTable();
+        listState = closeMarkdownList(listState, htmlParts);
+        ({ tableHeader, tableRows } = flushMarkdownTable(tableHeader, tableRows, htmlParts));
         // 兜底情况视为普通段落内容，延迟到 flushParagraph 时统一输出为 <p>。
         paragraphBuffer.push(line);
     }
 
     // 文件结束后把剩余 buffer 全部结算，避免最后一段内容丢失。
-    flushParagraph();
-    closeList();
-    flushBlockquote();
-    flushTable();
+    paragraphBuffer = flushMarkdownParagraph(paragraphBuffer, htmlParts);
+    listState = closeMarkdownList(listState, htmlParts);
+    blockquoteBuffer = flushMarkdownBlockquote(blockquoteBuffer, htmlParts);
+    ({ tableHeader, tableRows } = flushMarkdownTable(tableHeader, tableRows, htmlParts));
 
     if (codeFence) {
         // 若文档意外缺少结尾 ```，仍尽量把已收集内容渲染出来，而不是整体丢弃。
@@ -353,18 +421,7 @@ function renderMarkdownToHtml(content) {
             };
 
             const rawHtml = parseMarkdown(normalized);
-            const sanitizedFragment = DOMPurify.sanitize(rawHtml, {
-                USE_PROFILES: { html: true },
-                // 白名单只开放管理端实际需要的 Markdown 标签，减少攻击面。
-                ALLOWED_TAGS: [
-                    'a', 'blockquote', 'br', 'code', 'del', 'div', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-                    'hr', 'li', 'ol', 'p', 'pre', 'span', 'strong', 'table', 'tbody', 'td', 'th', 'thead', 'tr', 'ul'
-                ],
-                ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'data-language'],
-                FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form'],
-                FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'onmouseover', 'onfocus'],
-                RETURN_DOM_FRAGMENT: true,
-            });
+            const sanitizedFragment = DOMPurify.sanitize(rawHtml, MARKDOWN_SANITIZE_OPTIONS);
 
             sanitizedFragment.querySelectorAll('a[href]').forEach((link) => {
                 const href = String(link.getAttribute('href') || '').trim();
@@ -374,6 +431,18 @@ function renderMarkdownToHtml(content) {
                 }
                 link.setAttribute('target', '_blank');
                 link.setAttribute('rel', 'noopener noreferrer');
+            });
+
+            sanitizedFragment.querySelectorAll('img[src]').forEach((img) => {
+                const safeSrc = getSafeMarkdownImageSrc(img.getAttribute('src'));
+                if (!safeSrc) {
+                    img.remove();
+                    return;
+                }
+                img.setAttribute('src', safeSrc);
+                img.setAttribute('loading', 'lazy');
+                img.setAttribute('decoding', 'async');
+                img.setAttribute('referrerpolicy', 'no-referrer');
             });
 
             sanitizedFragment.querySelectorAll('table').forEach((table) => {
