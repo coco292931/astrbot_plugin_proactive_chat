@@ -13,6 +13,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote
 
 from astrbot.api import logger
 
@@ -29,24 +30,28 @@ except ImportError:
     # 允许插件主体在缺少 FastAPI 依赖时继续工作，只是禁用 Web 控制台。
     FASTAPI_AVAILABLE = False
     logger.warning(
-        "[主动消息] FastAPI 未安装，Web 管理端不可用。请安装: pip install fastapi uvicorn"
+        "[主动消息] FastAPI 未安装喵，Web 管理端不可用喵。请安装: pip install fastapi uvicorn"
     )
 
 
 def _is_running_in_docker() -> bool:
     """检测当前进程是否运行在 Docker / 容器环境中。"""
+    # /.dockerenv 是最常见的容器特征文件，若存在可直接判定为容器环境。
     if os.path.exists("/.dockerenv"):
         return True
 
     try:
         cgroup_path = Path("/proc/self/cgroup")
         if cgroup_path.exists():
+            # Linux 容器通常会在 cgroup 信息中暴露 docker / kubepods 等路径片段。
             content = cgroup_path.read_text(encoding="utf-8", errors="ignore")
             if "/docker/" in content or "/kubepods/" in content:
                 return True
     except Exception:
+        # 环境探测失败时宁可保守忽略，不影响主流程。
         pass
 
+    # 额外兼容某些自定义镜像通过环境变量主动标记容器场景的做法。
     return os.environ.get("DOCKER_CONTAINER") == "true"
 
 
@@ -115,7 +120,7 @@ class WebAdminServer:
             if not path.startswith("/api"):
                 return await call_next(request)
 
-            # API 请求统一使用 Bearer Token 认证。
+            # API 请求统一使用 Bearer Token 认证，避免把 token 暴露在 query 参数里。
             auth_header = request.headers.get("Authorization", "")
             if not auth_header.startswith("Bearer "):
                 return JSONResponse({"error": "未授权"}, status_code=401)
@@ -183,6 +188,46 @@ class WebAdminServer:
             # 汇总插件运行状态、计时器与连接数，供首页卡片与轮询逻辑使用。
             return self._build_status_payload()
 
+        @self.app.get("/api/markdown-files")
+        async def list_markdown_files():
+            # 仅暴露插件目录内明确允许浏览的 Markdown 文档，避免前端任意探测文件系统。
+            return {"items": self._list_markdown_documents()}
+
+        @self.app.get("/api/markdown-files/{file_path:path}")
+        async def get_markdown_file(file_path: str):
+            # 文件路径来自 URL path 参数；这里先进行 URL 解码，再交给后续白名单解析逻辑统一判断。
+            resolved = self._resolve_markdown_document(unquote(file_path))
+            if not resolved:
+                return JSONResponse(
+                    {"error": "文档不存在或不允许访问"}, status_code=404
+                )
+
+            try:
+                # 文件读取放到线程池中执行，避免阻塞事件循环影响 WebSocket 或其它 HTTP 请求。
+                content = await asyncio.to_thread(resolved.read_text, encoding="utf-8")
+            except UnicodeDecodeError:
+                # 前端当前只按 UTF-8 渲染 Markdown；若编码不匹配，直接返回可理解错误提示。
+                return JSONResponse(
+                    {"error": "文档编码不受支持，仅支持 UTF-8 Markdown 文件"},
+                    status_code=400,
+                )
+            except Exception as e:
+                logger.error(f"[主动消息] 读取 Markdown 文档失败喵: {e}")
+                return JSONResponse(
+                    {"error": "读取文档失败", "message": str(e)}, status_code=500
+                )
+
+            return {
+                # path 返回工作区相对路径，便于前端做目录列表高亮和当前文档定位。
+                "path": self._to_workspace_relative_path(resolved),
+                # title 直接取 stem，减少前端再做文件名拆分。
+                "title": resolved.stem,
+                # content 保留原始 Markdown 文本，由前端统一负责渲染。
+                "content": content,
+                # 显式告诉前端这是 Markdown 内容，方便后续复用统一渲染管线。
+                "content_format": "markdown",
+            }
+
         @self.app.get("/api/config")
         async def get_config():
             # 返回配置时显式过滤密码字段，避免管理端读取到明文密码。
@@ -206,12 +251,13 @@ class WebAdminServer:
             schema_path = Path(__file__).resolve().parent.parent / "_conf_schema.json"
             if schema_path.exists():
                 try:
+                    # Schema 文件可能较大，因此同样放在线程池读取，减少主循环阻塞。
                     schema_text = await asyncio.to_thread(
                         schema_path.read_text, encoding="utf-8"
                     )
                     return json.loads(schema_text)
                 except Exception as e:
-                    logger.error(f"[主动消息] 读取 Schema 失败: {e}")
+                    logger.error(f"[主动消息] 读取 Schema 失败喵: {e}")
             return {}
 
         @self.app.post("/api/config")
@@ -256,6 +302,7 @@ class WebAdminServer:
                         ),
                         # 标记是否存在会话级覆写，前端可据此展示提示标签。
                         "has_override": bool(override),
+                        # 额外把 override keys 暴露给前端，便于提示“哪些配置项被会话级改写”。
                         "override_keys": list(override.keys()),
                         # effective 可能为空，因此这里需要防御式布尔判断。
                         "enabled": bool(effective and effective.get("enable", False)),
@@ -299,6 +346,7 @@ class WebAdminServer:
                     return JSONResponse(
                         {"error": "override 必须是对象"}, status_code=400
                     )
+                # override 模式由前端显式提交差异配置，后端不再做反推。
                 await self.plugin.session_override_manager.set_override(
                     normalized, override
                 )
@@ -369,6 +417,7 @@ class WebAdminServer:
             if notification_id is None:
                 return JSONResponse({"error": "缺少必填字段 id"}, status_code=400)
             try:
+                # 前端传值可能是字符串，因此这里统一转成 int，方便下游逻辑处理。
                 normalized_id = int(notification_id)
             except (TypeError, ValueError):
                 return JSONResponse({"error": "id 必须是数字"}, status_code=400)
@@ -409,6 +458,7 @@ class WebAdminServer:
             if target == "data":
                 directory = Path(self.plugin.data_dir)
             else:
+                # 默认回退到插件根目录，保证前端传值异常时仍有一个安全目标。
                 directory = Path(__file__).resolve().parent.parent
 
             try:
@@ -429,6 +479,7 @@ class WebAdminServer:
                     # Windows 使用系统默认资源管理器，封装为异步避免阻塞事件循环。
                     await asyncio.to_thread(os.startfile, dir_str)
                 elif sys.platform == "darwin":
+                    # macOS 通过 open 命令调起 Finder；失败时把 stderr 带回前端便于定位。
                     result = await asyncio.to_thread(
                         subprocess.run,
                         ["open", dir_str],
@@ -447,6 +498,7 @@ class WebAdminServer:
                             status_code=500,
                         )
                 else:
+                    # 其它类 Unix 系统优先尝试 xdg-open，兼容常见 Linux 桌面环境。
                     result = await asyncio.to_thread(
                         subprocess.run,
                         ["xdg-open", dir_str],
@@ -508,6 +560,7 @@ class WebAdminServer:
         async def trigger_job(umo: str):
             # 立即手动触发一次指定会话的检查与发言流程，不阻塞当前请求。
             normalized = self.plugin._normalize_session_id(umo)
+            # 主动创建后台任务，避免前端请求长时间挂起等待业务执行完成。
             asyncio.create_task(self.plugin.check_and_chat(normalized))
             await self._broadcast_update("jobs")
             return {"ok": True, "session": normalized}
@@ -573,6 +626,7 @@ class WebAdminServer:
                     if msg_type == "ping":
                         await websocket.send_json({"type": "pong"})
                     elif msg_type == "refresh":
+                        # refresh 语义是“请立即把当前全量状态重新推送一次”。
                         await websocket.send_json(
                             {
                                 "type": "full_update",
@@ -609,6 +663,7 @@ class WebAdminServer:
         return token
 
     def _verify_token(self, token: str) -> bool:
+        # 空 token 直接失败，避免后续字典查找与比较的无意义开销。
         if not token:
             return False
         if token == "no-auth":
@@ -624,6 +679,7 @@ class WebAdminServer:
         return True
 
     def _safe_timer_meta(self, timer: Any, now: float) -> dict[str, float | int | None]:
+        # 某些会话可能当前没有有效 timer，此时直接返回空元信息。
         if timer is None:
             return {"remaining_seconds": None, "target_time": None}
 
@@ -662,6 +718,7 @@ class WebAdminServer:
         parsed = self.plugin._parse_session_id(session_id)
         if not parsed:
             lowered = str(session_id).lower()
+            # 兜底规则只在插件解析失败时启用，尽量保证前端仍有可用分类。
             return "group" if "group" in lowered else "friend"
 
         _, msg_type, _ = parsed
@@ -687,6 +744,7 @@ class WebAdminServer:
             trigger_delay_minutes = int(
                 auto_settings.get("auto_trigger_after_minutes", 0) or 0
             )
+            # 前端展示与进度计算统一按秒处理，因此这里先把分钟窗口换算为秒。
             trigger_delay_seconds = max(0, trigger_delay_minutes * 60)
             timer_meta = self._safe_timer_meta(timer, now)
             remaining_seconds = timer_meta["remaining_seconds"]
@@ -714,6 +772,7 @@ class WebAdminServer:
                     ),
                     "timer_kind": "auto_trigger",
                     "title": "自动触发检测",
+                    # remaining_seconds 可用时说明计时器处于有效运行状态，否则只能标为 unknown。
                     "status": "running" if remaining_seconds is not None else "unknown",
                     "remaining_seconds": remaining_seconds,
                     "target_time": target_time,
@@ -769,6 +828,7 @@ class WebAdminServer:
                     ),
                     "timer_kind": "group_silence",
                     "title": "群沉默检测",
+                    # 群沉默卡的状态定义与 auto_trigger 保持一致，便于前端复用状态渲染逻辑。
                     "status": "running" if remaining_seconds is not None else "unknown",
                     "remaining_seconds": remaining_seconds,
                     "target_time": target_time,
@@ -846,11 +906,13 @@ class WebAdminServer:
             "jobs_count": len(self.plugin.scheduler.get_jobs())
             if self.plugin.scheduler
             else 0,
+            # 计时器总数在前端可直接用于角标和标题，无需再做两次求和。
             "timer_cards_total": len(timer_cards["auto_trigger_cards"])
             + len(timer_cards["group_timer_cards"]),
             "auto_trigger_cards": timer_cards["auto_trigger_cards"],
             "group_timer_cards": timer_cards["group_timer_cards"],
             "ws_connections": len(self._ws_connections),
+            # 时间戳用于前端判断数据新鲜度或手动刷新完成时间。
             "timestamp": datetime.now().isoformat(),
         }
 
@@ -920,6 +982,7 @@ class WebAdminServer:
                     "session_display_name": self.plugin._get_session_display_name(
                         session, effective
                     ),
+                    # has_override 让前端在摘要态就能知道这个会话是否存在局部改写。
                     "has_override": bool(
                         self.plugin.session_override_manager.get_override(session)
                     ),
@@ -943,6 +1006,97 @@ class WebAdminServer:
             }
         return await self.plugin.notification_center.get_payload()
 
+    def _get_markdown_document_roots(self) -> list[Path]:
+        """返回允许前端浏览的 Markdown 文档根目录。"""
+        plugin_root = Path(__file__).resolve().parent.parent
+        # 根目录与 docs 目录都纳入浏览范围，覆盖 README / CHANGELOG 与附加文档场景。
+        return [plugin_root, plugin_root / "docs"]
+
+    def _list_markdown_documents(self) -> list[dict[str, Any]]:
+        """列出允许浏览的 Markdown 文档摘要。"""
+        items: list[dict[str, Any]] = []
+        seen: set[str] = set()
+
+        for root in self._get_markdown_document_roots():
+            if not root.exists():
+                continue
+
+            for path in sorted(root.rglob("*.md")):
+                if not path.is_file():
+                    continue
+
+                try:
+                    # 所有路径统一转为插件工作区相对路径，方便前端展示与请求。
+                    relative_path = self._to_workspace_relative_path(path)
+                except ValueError:
+                    # 若文件不在工作区内，说明超出允许范围，直接忽略。
+                    continue
+
+                normalized = relative_path.replace("\\", "/")
+                if normalized in seen:
+                    continue
+                seen.add(normalized)
+
+                items.append(
+                    {
+                        "path": normalized,
+                        # title 面向展示，filename 更偏向调试或原始文件识别。
+                        "title": path.stem,
+                        "filename": path.name,
+                        # category 便于前端未来按目录做分组；根目录文件统一标为 root。
+                        "category": path.parent.name
+                        if path.parent != path.parent.parent
+                        else "root",
+                    }
+                )
+
+        # 优先展示根目录文档，再按路径字母序排序，通常更符合 README / CHANGELOG 的阅读优先级。
+        items.sort(
+            key=lambda item: (
+                0 if item["path"].count("/") == 0 else 1,
+                item["path"].lower(),
+            )
+        )
+        return items
+
+    def _resolve_markdown_document(self, raw_path: str) -> Path | None:
+        """将前端请求的 Markdown 相对路径解析为插件目录中的受信任文件。"""
+        normalized = str(raw_path or "").strip().replace("\\", "/")
+        if not normalized or not normalized.lower().endswith(".md"):
+            return None
+        # 明确拒绝绝对路径与上级目录跳转，防止路径穿越访问到插件目录外的文件。
+        if (
+            normalized.startswith("/")
+            or normalized.startswith("../")
+            or "/../" in normalized
+        ):
+            return None
+
+        plugin_root = Path(__file__).resolve().parent.parent.resolve()
+        candidate = (plugin_root / normalized).resolve()
+        allowed_roots = [
+            root.resolve()
+            for root in self._get_markdown_document_roots()
+            if root.exists()
+        ]
+
+        if not candidate.is_file():
+            return None
+
+        for root in allowed_roots:
+            try:
+                # 只有 candidate 仍处于允许根目录之下时才算合法文件。
+                candidate.relative_to(root)
+                return candidate
+            except ValueError:
+                continue
+        return None
+
+    def _to_workspace_relative_path(self, path: Path) -> str:
+        """将绝对路径转换为插件工作区内的相对路径。"""
+        plugin_root = Path(__file__).resolve().parent.parent.resolve()
+        return str(path.resolve().relative_to(plugin_root)).replace("\\", "/")
+
     async def _broadcast_update(self, reason: str) -> None:
         # 若当前没有任何活跃前端连接，则无需构造完整广播载荷，可直接返回。
         if not self._ws_connections:
@@ -950,6 +1104,7 @@ class WebAdminServer:
 
         payload = {
             "type": "update",
+            # reason 主要供前端调试与按需决定是否额外提示某类更新来源。
             "reason": reason,
             "data": {
                 "status": self._build_status_payload(),
@@ -973,7 +1128,7 @@ class WebAdminServer:
 
     async def start(self) -> None:
         if not FASTAPI_AVAILABLE:
-            logger.error("[主动消息] 无法启动 Web 管理端: FastAPI 未安装")
+            logger.error("[主动消息] 无法启动 Web 管理端喵: FastAPI 未安装")
             return
 
         web_admin = self.config.get("web_admin", {})
@@ -1011,11 +1166,11 @@ class WebAdminServer:
                     for k in expired:
                         self._tokens.pop(k, None)
                     if expired:
-                        logger.debug(f"[主动消息] 已清理 {len(expired)} 个过期令牌。")
+                        logger.debug(f"[主动消息] 已清理 {len(expired)} 个过期令牌喵。")
                 except asyncio.CancelledError:
                     break
                 except Exception as e:
-                    logger.debug(f"[主动消息] 清理过期令牌异常: {e}")
+                    logger.debug(f"[主动消息] 清理过期令牌异常喵: {e}")
 
         if self._auth_enabled:
             self._token_cleanup_task = asyncio.create_task(_cleanup_tokens_loop())
