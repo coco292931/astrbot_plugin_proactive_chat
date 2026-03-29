@@ -291,7 +291,9 @@ class TelemetryManager:
         sanitized = re.sub(r"/(?:home|Users|root)/[^/\s]+/", r"<USER_HOME>/", sanitized)
         sanitized = re.sub(r"[A-Za-z]:\\Users\\[^\\\s]+\\", r"<USER_HOME>\\", sanitized)
         sanitized = re.sub(r"\b[A-Za-z]:\\[^\r\n'\"<>|]*", "<WINDOWS_PATH>", sanitized)
-        sanitized = re.sub(r"(?<!<)/(?:[^\s/'\"]+/)+[^\s/'\"]+", "<UNIX_PATH>", sanitized)
+        sanitized = re.sub(
+            r"(?<!<)/(?:[^\s/'\"]+/)+[^\s/'\"]+", "<UNIX_PATH>", sanitized
+        )
         # 再过滤业务敏感内容：会话 UMO、密码/密钥类字段、提示词正文。
         sanitized = self._UMO_PATTERN.sub("<SESSION_UMO>", sanitized)
         sanitized = self._KEY_VALUE_PATTERN.sub(r"\1\2<FILTERED>", sanitized)
