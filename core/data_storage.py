@@ -78,14 +78,39 @@ class StorageMixin:
             if key not in merged:
                 merged[key] = incoming[key]
                 continue
-            # 数值型取更大值，降低频繁触发风险
-            if isinstance(merged[key], (int, float)) and isinstance(
-                incoming[key], (int, float)
-            ):
-                merged[key] = max(merged[key], incoming[key])
-            else:
-                # 非数值（如 self_id）优先保留已有值
-                merged[key] = merged[key] or incoming[key]
+
+            if key == "unanswered_count":
+                if isinstance(merged[key], (int, float)) and isinstance(
+                    incoming[key], (int, float)
+                ):
+                    merged[key] = max(merged[key], incoming[key])
+                continue
+
+            if key in {"last_message_time", "next_trigger_time", "last_scheduled_at"}:
+                if isinstance(merged[key], (int, float)) and isinstance(
+                    incoming[key], (int, float)
+                ):
+                    merged[key] = max(merged[key], incoming[key])
+                continue
+
+            if key in {
+                "last_schedule_min_interval_seconds",
+                "last_schedule_max_interval_seconds",
+                "last_schedule_random_interval_seconds",
+            }:
+                base_scheduled_at = merged.get("last_scheduled_at")
+                incoming_scheduled_at = incoming.get("last_scheduled_at")
+                if isinstance(base_scheduled_at, (int, float)) and isinstance(
+                    incoming_scheduled_at, (int, float)
+                ):
+                    if incoming_scheduled_at >= base_scheduled_at:
+                        merged[key] = incoming[key]
+                elif key not in merged or not merged.get(key):
+                    merged[key] = incoming[key]
+                continue
+
+            # 非数值（如 self_id）优先保留已有值
+            merged[key] = merged[key] or incoming[key]
         return merged
 
     def _normalize_session_data(self) -> bool:
@@ -123,15 +148,18 @@ class StorageMixin:
 
     def _cleanup_invalid_session_data(self) -> int:
         """
-        清理无效的会话数据（旧格式遗留）。
+        清理无效的会话数据（旧格式遗留或不可解析条目）。
         """
         cleaned_count = 0
         invalid_sessions: list[str] = []
 
         # 标记需要清理的旧格式 session_id
         for session_id in list(self.session_data.keys()):
-            if session_id.startswith("friend_message:") or session_id.startswith(
-                "group_message:"
+            parsed = self._parse_session_id(session_id)
+            if (
+                session_id.startswith("friend_message:")
+                or session_id.startswith("group_message:")
+                or not parsed
             ):
                 invalid_sessions.append(session_id)
                 cleaned_count += 1
