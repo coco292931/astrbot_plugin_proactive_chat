@@ -403,6 +403,31 @@ body.dark-theme .boot-loader__progress-bar {
     margin-bottom: 4px;
 }
 
+.sidebar-notification-badge {
+    margin-left: auto;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #FF6B6B, #E53935);
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    box-shadow: 0 8px 18px rgba(229, 57, 53, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.42);
+    flex-shrink: 0;
+}
+
+.nav-item.active .sidebar-notification-badge {
+    background: linear-gradient(135deg, #FF5A5F, #D32F2F);
+    box-shadow: 0 8px 18px rgba(211, 47, 47, 0.24);
+}
+
 .nav-item:hover {
     background: rgba(103, 80, 164, 0.08);
     opacity: 1;
@@ -1969,7 +1994,9 @@ body.dark-theme .status-timer-info-item {
 .notification-md ol,
 .notification-md blockquote,
 .notification-md pre,
-.notification-md .notification-md-table-wrap {
+.notification-md .notification-md-table-wrap,
+.notification-md .notification-md-details,
+.notification-md .notification-md-mermaid-block {
     margin: 0 0 0.95rem;
 }
 
@@ -2080,6 +2107,86 @@ body.dark-theme .status-timer-info-item {
     margin: 0;
 }
 
+.notification-md .notification-md-callout {
+    position: relative;
+    padding: 1rem 1.1rem 1rem 1.15rem;
+    border-left-width: 5px;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    background: linear-gradient(135deg, rgba(103, 80, 164, 0.08), rgba(103, 80, 164, 0.03));
+}
+
+.notification-md .notification-md-callout-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0.72rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.notification-md .notification-md-callout-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2rem;
+    height: 1.2rem;
+    font-size: 0.95rem;
+}
+
+.notification-md .notification-md-callout-title {
+    font-size: 1rem;
+    letter-spacing: -0.01em;
+}
+
+.notification-md .notification-md-callout.is-note {
+    border-left-color: #2563EB;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0.04));
+}
+
+.notification-md .notification-md-callout.is-note .notification-md-callout-header {
+    color: #2563EB;
+}
+
+.notification-md .notification-md-callout.is-tip {
+    border-left-color: #0F9D58;
+    background: linear-gradient(135deg, rgba(15, 157, 88, 0.12), rgba(15, 157, 88, 0.04));
+}
+
+.notification-md .notification-md-callout.is-tip .notification-md-callout-header {
+    color: #0F9D58;
+}
+
+.notification-md .notification-md-callout.is-important {
+    border-left-color: #7C3AED;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.14), rgba(124, 58, 237, 0.05));
+}
+
+.notification-md .notification-md-callout.is-important .notification-md-callout-header {
+    color: #7C3AED;
+}
+
+.notification-md .notification-md-callout.is-warning {
+    border-left-color: #D97706;
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.14), rgba(217, 119, 6, 0.05));
+}
+
+.notification-md .notification-md-callout.is-warning .notification-md-callout-header {
+    color: #D97706;
+}
+
+.notification-md .notification-md-callout.is-caution {
+    border-left-color: #DC2626;
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.14), rgba(220, 38, 38, 0.05));
+}
+
+.notification-md .notification-md-callout.is-caution .notification-md-callout-header {
+    color: #DC2626;
+}
+
+.notification-md .notification-md-callout > :last-child {
+    margin-bottom: 0;
+}
+
 .notification-md :not(pre) > code {
     display: inline-block;
     padding: 0.14rem 0.48rem;
@@ -2094,7 +2201,8 @@ body.dark-theme .status-timer-info-item {
     line-height: 1.45;
 }
 
-.notification-md-code-block {
+.notification-md-code-block,
+.notification-md-mermaid-block {
     margin: 0 0 0.95rem;
     overflow: hidden;
     border-radius: 18px;
@@ -2205,6 +2313,148 @@ body.dark-theme .status-timer-info-item {
     border: 1px solid rgba(103, 80, 164, 0.12);
     background: rgba(255, 255, 255, 0.34);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+
+.notification-md .notification-md-details {
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid rgba(103, 80, 164, 0.16);
+    background: linear-gradient(180deg, rgba(103, 80, 164, 0.08), rgba(103, 80, 164, 0.03));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.notification-md .notification-md-summary {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.88rem 1rem;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    font-weight: 800;
+    color: var(--md-sys-color-on-surface);
+}
+
+.notification-md .notification-md-summary::-webkit-details-marker {
+    display: none;
+}
+
+.notification-md .notification-md-summary::before {
+    content: '▸';
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--md-sys-color-primary);
+    font-size: 0.92rem;
+    line-height: 1;
+    transform: rotate(0deg);
+    transition: transform var(--interactive-transition-duration) var(--theme-transition-easing);
+}
+
+.notification-md .notification-md-details[open] > .notification-md-summary::before {
+    transform: rotate(90deg);
+}
+
+.notification-md .notification-md-details > :not(summary) {
+    margin-left: 1rem;
+    margin-right: 1rem;
+}
+
+.notification-md .notification-md-details > :not(summary):last-child {
+    margin-bottom: 1rem;
+}
+
+.notification-md .notification-md-details > .notification-md-summary + * {
+    margin-top: 0.1rem;
+}
+
+.notification-md-mermaid {
+    overflow: hidden;
+    padding: 1rem;
+    background:
+        radial-gradient(circle at top right, rgba(103, 80, 164, 0.08), transparent 34%),
+        linear-gradient(180deg, rgba(248, 245, 255, 0.96), rgba(241, 236, 251, 0.96));
+    text-align: center;
+}
+
+.notification-md-mermaid-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.7rem 0.9rem 0;
+}
+
+.notification-md-mermaid-tool-btn {
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 0.65rem;
+    border: 1px solid rgba(103, 80, 164, 0.16);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--md-sys-color-primary);
+    font-size: 0.9rem;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+        background-color var(--interactive-transition-duration) var(--theme-transition-easing),
+        border-color var(--interactive-transition-duration) var(--theme-transition-easing),
+        transform var(--interactive-transition-duration) var(--theme-transition-easing),
+        box-shadow var(--interactive-transition-duration) var(--theme-transition-easing);
+}
+
+.notification-md-mermaid-tool-btn:hover {
+    background: rgba(103, 80, 164, 0.12);
+    border-color: rgba(103, 80, 164, 0.24);
+    transform: translateY(-1px);
+}
+
+.notification-md-mermaid-viewport {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    min-height: 240px;
+    border-radius: 14px;
+    cursor: default;
+    touch-action: none;
+}
+
+.notification-md-mermaid-viewport.is-pannable {
+    cursor: grab;
+}
+
+.notification-md-mermaid-viewport.is-dragging {
+    cursor: grabbing;
+}
+
+.notification-md-mermaid-canvas {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 100%;
+    min-height: 240px;
+    transform-origin: center center;
+    will-change: transform;
+}
+
+.notification-md-mermaid svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    user-select: none;
+    pointer-events: none;
+}
+
+.notification-md-mermaid.is-error {
+    text-align: left;
+    color: #B3261E;
+    white-space: pre-wrap;
+    font-family: "Consolas", "SFMono-Regular", monospace;
+    font-size: 0.9rem;
+    line-height: 1.7;
 }
 
 .notification-md table {
@@ -2351,6 +2601,11 @@ body.dark-theme .status-timer-info-item {
 }
 
 
+body.dark-theme .sidebar-notification-badge {
+    border-color: rgba(28, 27, 31, 0.42);
+    box-shadow: 0 10px 22px rgba(255, 107, 107, 0.18);
+}
+
 body.dark-theme .sidebar-github-author {
     color: var(--md-sys-color-on-surface);
 }
@@ -2451,12 +2706,57 @@ body.dark-theme .notification-md blockquote {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
+body.dark-theme .notification-md .notification-md-callout {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+body.dark-theme .notification-md .notification-md-callout.is-note {
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.16), rgba(30, 64, 175, 0.18));
+}
+
+body.dark-theme .notification-md .notification-md-callout.is-note .notification-md-callout-header {
+    color: #93C5FD;
+}
+
+body.dark-theme .notification-md .notification-md-callout.is-tip {
+    background: linear-gradient(135deg, rgba(74, 222, 128, 0.16), rgba(21, 128, 61, 0.18));
+}
+
+body.dark-theme .notification-md .notification-md-callout.is-tip .notification-md-callout-header {
+    color: #86EFAC;
+}
+
+body.dark-theme .notification-md .notification-md-callout.is-important {
+    background: linear-gradient(135deg, rgba(196, 181, 253, 0.18), rgba(91, 33, 182, 0.20));
+}
+
+body.dark-theme .notification-md .notification-md-callout.is-important .notification-md-callout-header {
+    color: #D8B4FE;
+}
+
+body.dark-theme .notification-md .notification-md-callout.is-warning {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.18), rgba(180, 83, 9, 0.18));
+}
+
+body.dark-theme .notification-md .notification-md-callout.is-warning .notification-md-callout-header {
+    color: #FCD34D;
+}
+
+body.dark-theme .notification-md .notification-md-callout.is-caution {
+    background: linear-gradient(135deg, rgba(248, 113, 113, 0.18), rgba(153, 27, 27, 0.18));
+}
+
+body.dark-theme .notification-md .notification-md-callout.is-caution .notification-md-callout-header {
+    color: #FCA5A5;
+}
+
 body.dark-theme .notification-md :not(pre) > code {
     background: rgba(208, 188, 255, 0.12);
     border-color: rgba(208, 188, 255, 0.18);
 }
 
-body.dark-theme .notification-md-code-block {
+body.dark-theme .notification-md-code-block,
+body.dark-theme .notification-md-mermaid-block {
     border-color: rgba(208, 188, 255, 0.18);
     background:
         linear-gradient(180deg, rgba(208, 188, 255, 0.12), rgba(79, 55, 139, 0.08) 16%, rgba(23, 20, 29, 0.96) 100%),
@@ -2527,6 +2827,37 @@ body.dark-theme .notification-md .notification-md-table-wrap {
     background: rgba(255, 255, 255, 0.04);
     border-color: rgba(208, 188, 255, 0.14);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+body.dark-theme .notification-md .notification-md-details {
+    background: linear-gradient(180deg, rgba(208, 188, 255, 0.12), rgba(79, 55, 139, 0.10));
+    border-color: rgba(208, 188, 255, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+body.dark-theme .notification-md .notification-md-summary {
+    color: var(--md-sys-color-on-surface);
+}
+
+body.dark-theme .notification-md-mermaid {
+    background:
+        radial-gradient(circle at top right, rgba(208, 188, 255, 0.08), transparent 34%),
+        linear-gradient(180deg, rgba(30, 27, 38, 0.98), rgba(20, 18, 24, 0.98));
+}
+
+body.dark-theme .notification-md-mermaid-tool-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(208, 188, 255, 0.18);
+    color: var(--md-sys-color-primary);
+}
+
+body.dark-theme .notification-md-mermaid-tool-btn:hover {
+    background: rgba(208, 188, 255, 0.14);
+    border-color: rgba(208, 188, 255, 0.24);
+}
+
+body.dark-theme .notification-md-mermaid.is-error {
+    color: #F2B8B5;
 }
 
 body.dark-theme .notification-md th,
@@ -2811,6 +3142,22 @@ body.dark-theme .connection-chip {
     .notification-md .notification-md-table-wrap {
         margin-left: -2px;
         margin-right: -2px;
+    }
+
+    .notification-md .notification-md-summary {
+        padding: 0.78rem 0.88rem;
+    }
+
+    .notification-md .notification-md-callout {
+        padding: 0.9rem 0.92rem 0.9rem 0.98rem;
+    }
+
+    .notification-md .notification-md-callout-header {
+        margin-bottom: 0.6rem;
+    }
+
+    .notification-md-mermaid {
+        padding: 0.85rem;
     }
     .sidebar {
         padding: 10px 12px;
