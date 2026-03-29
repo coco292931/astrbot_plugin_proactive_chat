@@ -1139,6 +1139,31 @@ class WebAdminServer:
             if ws in self._ws_connections:
                 self._ws_connections.remove(ws)
 
+    async def _broadcast_notification_meta_update(self, reason: str) -> None:
+        # 轻量广播仅同步通知元信息，避免在轮询无内容变更时重复发送完整通知列表。
+        if not self._ws_connections:
+            return
+
+        notification_payload = await self._build_notification_payload()
+        payload = {
+            "type": "update",
+            "reason": reason,
+            "data": {
+                "notificationsMeta": notification_payload.get("meta", {}),
+            },
+        }
+
+        to_remove: list[WebSocket] = []
+        for ws in list(self._ws_connections):
+            try:
+                await ws.send_json(payload)
+            except Exception:
+                to_remove.append(ws)
+
+        for ws in to_remove:
+            if ws in self._ws_connections:
+                self._ws_connections.remove(ws)
+
     async def start(self) -> None:
         if not FASTAPI_AVAILABLE:
             logger.error("[主动消息] 无法启动 Web 管理端喵: FastAPI 未安装")

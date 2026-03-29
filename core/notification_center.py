@@ -354,8 +354,13 @@ class NotificationCenter:
             return
 
         changed = await self.refresh()
-        if changed and getattr(self.plugin, "web_admin_server", None):
-            await self.plugin.web_admin_server._broadcast_update("notifications")
+        if getattr(self.plugin, "web_admin_server", None):
+            if changed:
+                await self.plugin.web_admin_server._broadcast_update("notifications")
+            else:
+                await self.plugin.web_admin_server._broadcast_notification_meta_update(
+                    "notifications-meta"
+                )
 
         async def _poll_loop() -> None:
             while True:
@@ -363,11 +368,17 @@ class NotificationCenter:
                     # 采用 sleep + refresh 的简单轮询模型即可满足一期通知同步需求。
                     await asyncio.sleep(self._get_poll_interval_seconds())
                     changed = await self.refresh()
-                    if changed and getattr(self.plugin, "web_admin_server", None):
-                        # 只有通知内容发生变化时才广播，减少无意义的前端重渲染。
-                        await self.plugin.web_admin_server._broadcast_update(
-                            "notifications"
-                        )
+                    if getattr(self.plugin, "web_admin_server", None):
+                        if changed:
+                            # 仅在通知内容变化时推送完整通知载荷，避免无意义的大包重传。
+                            await self.plugin.web_admin_server._broadcast_update(
+                                "notifications"
+                            )
+                        else:
+                            # 内容未变化时只同步元信息，确保“上次同步”时间标签自动刷新。
+                            await self.plugin.web_admin_server._broadcast_notification_meta_update(
+                                "notifications-meta"
+                            )
                 except asyncio.CancelledError:
                     break
                 except Exception as e:
