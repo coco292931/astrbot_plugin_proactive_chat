@@ -273,6 +273,11 @@ class NotificationCenter:
             "total_count": len(self._cache.get("items", [])),
         }
 
+    async def get_meta(self) -> dict[str, Any]:
+        async with self._lock:
+            # 仅返回通知元信息，供轻量广播路径复用，避免额外构造完整 items 列表。
+            return self._build_meta_locked()
+
     async def get_payload(self) -> dict[str, Any]:
         async with self._lock:
             read_map = self._cache.get("read_map", {})
