@@ -47,7 +47,7 @@
 ### ♻️ Refactor (重构)
 
 - 将原来的 `main.py` 全家桶架构彻底拆分为多文件的模块化架构并保持原有核心功能不变 by @DBJD-CR in #34
-- 将原来又臭又长的配置文件结构大幅简化 (并且现在在 AstrBot WebUI 中进行浏览时再也不会卡顿了)，个性化配置功能解耦至插件独立 Web by@DBJD-CR in #34 #36
+- 将原来又臭又长的配置文件结构大幅简化 (并且现在在 AstrBot WebUI 中进行浏览时再也不会卡顿了)，个性化配置功能解耦至插件独立 Web by @DBJD-CR in #34 #36
 - **破坏性变更**：暂时移除了配置与提示词备份相关功能，以及需要重新填写的 UMO 格式 by @DBJD-CR in #34
 
 ### 🐛 Bug Fixes (修复)
@@ -63,8 +63,8 @@
 
 ### 🔧 Chore (杂项)
 
-- 为屎山代码工作流添加了 SHA256 校验 by@DBJD-CR in #47
-- SVG 与插件元数据更新 by@DBJD-CR in #47
+- 为屎山代码工作流添加了 SHA256 校验 by @DBJD-CR in #47
+- SVG 与插件元数据更新 by @DBJD-CR in #47
 
 ---
 
@@ -78,6 +78,7 @@
 - @Aloys233 made their first contribution in #40
 - @codex made their first contribution in #43
 - @Alaye-Dong made their first contribution in #47
+- @kilo-code-bot[bot] made their first contribution in #47
 
 **Full Changelog**: https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/compare/v1.1.5...v1.2.0
 
