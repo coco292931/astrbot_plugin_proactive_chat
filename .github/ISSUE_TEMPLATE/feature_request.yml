@@ -59,8 +59,6 @@ body:
       label: 其他平台名称（如选择“其他平台”请填写）
       description: 如果你上面选择了“其他平台”，请在这里补充实际平台名称；否则可留空。
       placeholder: 如: 全平台 / 自定义适配器 / 某社区平台
-    validations:
-      required: false
 
   - type: dropdown
     attributes:
@@ -80,8 +78,6 @@ body:
         - '手动部署（CLI / 源码 / uv）'
         - '其他'
         - '不确定'
-    validations:
-      required: false
 
   - type: textarea
     attributes:
@@ -90,8 +86,6 @@ body:
         如该建议与 AstrBot 版本、插件版本、多个平台兼容性或特殊部署环境有关，请在这里补充。
       placeholder: >
         如: 希望 Telegram、飞书和 QQ 官机表现一致；当前部署在 Docker；建议优先支持 XX 功能等。
-    validations:
-      required: false
 
   - type: checkboxes
     attributes:

@@ -74,16 +74,12 @@ body:
         - 'Matrix (社区提供)'
         - 'VoceChat (社区提供)'
         - '其他平台'
-    validations:
-      required: false
 
   - type: input
     attributes:
       label: 其他平台名称（如选择“其他平台”请填写）
       description: 如果你上面选择了“其他平台”，请在这里补充实际平台名称；否则可留空。
       placeholder: 如: 全平台 / 自定义适配器 / 某社区平台
-    validations:
-      required: false
 
   - type: dropdown
     attributes:
@@ -103,8 +99,6 @@ body:
         - '手动部署（CLI / 源码 / uv）'
         - '其他'
         - '不确定'
-    validations:
-      required: false
 
   - type: textarea
     attributes:
@@ -112,8 +106,6 @@ body:
       description: 如果该问题与你的部署方式、适配器、AstrBot 版本或插件版本有关，可以在这里补充。
       placeholder: >
         如: AstrBot Launcher 部署, AstrBot v4.22.1, QQ 官方机器人 (Webhook 方式), 插件 v1.2.0。
-    validations:
-      required: false
 
   - type: textarea
     attributes:
@@ -121,8 +113,6 @@ body:
       description: 如你已经写好了建议文案、示例配置、截图或对照资料，可在这里附上。
       placeholder: >
         可粘贴建议文本、示例配置、截图链接或其他补充材料。
-    validations:
-      required: false
 
   - type: checkboxes
     attributes:
