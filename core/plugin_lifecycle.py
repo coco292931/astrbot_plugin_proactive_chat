@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import time
 import zoneinfo
+from typing import Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -25,13 +26,13 @@ class LifecycleMixin:
     last_message_times: dict[str, float]
     group_timers: dict[str, asyncio.TimerHandle]
     auto_trigger_timers: dict[str, asyncio.TimerHandle]
-    data_dir: any
-    session_data_file: any
-    web_admin_server: any
-    notification_center: any
-    telemetry: any
+    data_dir: Any
+    session_data_file: Any
+    web_admin_server: Any
+    notification_center: Any
+    telemetry: Any
     _heartbeat_task: asyncio.Task[None] | None
-    _original_exception_handler: any
+    _original_exception_handler: Any
     _start_time: float
 
     async def initialize(self) -> None:
@@ -174,8 +175,10 @@ class LifecycleMixin:
                 # 再清理其余挂起的 telemetry tasks，避免遗留后台任务。
                 await self._cleanup_telemetry_tasks()
 
-            if self._original_exception_handler is not None:
+            if self.telemetry and self.telemetry.enabled:
                 loop = asyncio.get_running_loop()
+                # 初始化阶段无论原处理器是自定义函数还是 None（表示默认处理器），
+                # 这里都要恢复原值，避免插件卸载后继续残留自定义异常处理器。
                 loop.set_exception_handler(self._original_exception_handler)
                 self._original_exception_handler = None
             # 取消群聊沉默计时器
