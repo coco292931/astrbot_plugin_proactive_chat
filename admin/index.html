@@ -37,12 +37,10 @@
         </div>
         <div class="boot-loader__title">主动消息管理端</div>
         <div class="boot-loader__subtitle" id="boot-text">正在初始化...</div>
-        <div id="boot-login" style="display:none; width:min(360px, calc(100vw - 48px)); margin:16px auto 0; text-align:left;">
-            <label for="boot-password" style="display:block; margin-bottom:8px; font-size:13px; color:#625B71;">管理端密码</label>
-            <input id="boot-password" type="password" autocomplete="current-password" placeholder="请输入访问密码"
-                style="width:100%; box-sizing:border-box; height:44px; padding:0 14px; border:1px solid rgba(103,80,164,0.22); border-radius:14px; background:rgba(255,255,255,0.88); color:#1C1B1F; outline:none; font-size:14px; box-shadow:0 8px 24px rgba(103,80,164,0.08);">
-            <button id="boot-login-button" type="button"
-                style="width:100%; margin-top:12px; height:44px; border:none; border-radius:14px; background:linear-gradient(135deg, #7F67BE 0%, #6750A4 100%); color:#fff; font-size:14px; font-weight:600; cursor:pointer; box-shadow:0 10px 24px rgba(103,80,164,0.22);">
+        <div id="boot-login" class="boot-login">
+            <label for="boot-password" class="boot-login__label">管理端密码</label>
+            <input id="boot-password" class="boot-login__input" type="password" autocomplete="current-password" placeholder="请输入访问密码">
+            <button id="boot-login-button" class="boot-login__button" type="button">
                 登录进入
             </button>
         </div>
@@ -64,6 +62,8 @@
         (function () {
             // 该标记用于阻止 React 应用过早启动，直到鉴权探测流程结束后再解除。
             window.__PROACTIVE_AUTH_PENDING = true;
+
+            var bootLoginEventsBound = false;
 
             function proceed() {
                 // 告知其余脚本：鉴权检查已完成，可以开始渲染业务界面。
@@ -92,7 +92,7 @@
             }
 
             function showInfo(msg) {
-                var text = document.getElementById('boot-text');
+                const text = document.getElementById('boot-text');
                 if (text) {
                     text.textContent = msg;
                     text.style.color = '#D05F00';
@@ -120,7 +120,7 @@
                 if (message) showError(message);
                 setLoginBusy(false);
 
-                if (!button || !input || button.__bootBound) {
+                if (!button || !input) {
                     if (input) setTimeout(function () { input.focus(); }, 0);
                     return;
                 }
@@ -143,9 +143,13 @@
                         body: JSON.stringify({ password: password }),
                     })
                         .then(function (res) {
-                            return res.json().catch(function () { return null; }).then(function (data) {
-                                return { ok: res.ok, data: data };
-                            });
+                            return res.json()
+                                .then(function (data) {
+                                    return { ok: res.ok, data: data };
+                                })
+                                .catch(function () {
+                                    return { ok: res.ok, data: null };
+                                });
                         })
                         .then(function (result) {
                             if (!result.ok) {
@@ -167,14 +171,16 @@
                         });
                 }
 
-                button.addEventListener('click', submitLogin);
-                input.addEventListener('keydown', function (event) {
-                    if (event.key === 'Enter') {
-                        event.preventDefault();
-                        submitLogin();
-                    }
-                });
-                button.__bootBound = true;
+                if (!bootLoginEventsBound) {
+                    button.addEventListener('click', submitLogin);
+                    input.addEventListener('keydown', function (event) {
+                        if (event.key === 'Enter') {
+                            event.preventDefault();
+                            submitLogin();
+                        }
+                    });
+                    bootLoginEventsBound = true;
+                }
                 setTimeout(function () { input.focus(); }, 0);
             }
 
@@ -190,6 +196,9 @@
                         window.AuthUtil.clearToken();
                         showLoginForm('访问令牌已失效，请重新登录');
                         return;
+                    }
+                    if (!res.ok) {
+                        throw new Error('管理端鉴权校验失败，请稍后重试');
                     }
                     proceed();
                 });
