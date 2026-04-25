@@ -27,10 +27,40 @@ class LlmMixin:
     }
     PLATFORM_FILE_PLACEHOLDER = "[文件]"
     PLATFORM_FILE_PLACEHOLDER_TEMPLATE = "[文件{name}]"
+    DEFAULT_BOT_IDENTIFIERS = {"bot"}
 
     context: Any
     timezone: Any
     telemetry: Any
+
+    def _parse_bool_setting(self, value: Any, default: bool) -> bool:
+        if isinstance(value, bool):
+            return value
+        if value is None:
+            return default
+        if isinstance(value, (int, float)):
+            return bool(value)
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"true", "1", "yes", "y", "on"}:
+                return True
+            if normalized in {"false", "0", "no", "n", "off", ""}:
+                return False
+        return default
+
+    def _parse_bot_identifiers(self, value: Any) -> set[str]:
+        normalized: set[str] = set()
+        if isinstance(value, str):
+            raw_items = [part.strip() for part in value.split(",")]
+        elif isinstance(value, (list, tuple, set)):
+            raw_items = [str(part).strip() for part in value]
+        else:
+            raw_items = []
+
+        for item in raw_items:
+            if item:
+                normalized.add(item.lower())
+        return normalized or set(self.DEFAULT_BOT_IDENTIFIERS)
 
     def _sanitize_history_content(self, history: list) -> list:
         """清洗历史消息内容，确保所有内容均为纯文本字符串喵。"""
@@ -108,10 +138,17 @@ class LlmMixin:
             max_chars = self.PLATFORM_CONTEXT_MAX_CHARS
         max_chars = max(0, min(max_chars, 20000))
 
+        include_bot_messages = self._parse_bool_setting(
+            settings.get("include_bot_messages", True),
+            default=True,
+        )
+        bot_identifiers = self._parse_bot_identifiers(settings.get("bot_identifiers"))
+
         return {
             "source_mode": source_mode,
             "platform_history_count": count,
-            "include_bot_messages": bool(settings.get("include_bot_messages", True)),
+            "include_bot_messages": include_bot_messages,
+            "bot_identifiers": bot_identifiers,
             "platform_context_max_chars": max_chars,
         }
 
@@ -145,6 +182,10 @@ class LlmMixin:
     def _build_platform_history_user_candidates(self, user_key: str) -> list[str]:
         """构建平台流水 user_id 候选键（兼容 webchat 等格式）。"""
         if not isinstance(user_key, str) or not user_key:
+            return []
+
+        user_key = user_key.strip()
+        if not user_key:
             return []
 
         candidates: list[str] = [user_key]
@@ -282,8 +323,13 @@ class LlmMixin:
             .replace("[真实平台聊天流水结束]", "【真实平台聊天流水结束】")
         )
 
-    def _is_platform_bot_record(self, record: Any) -> bool:
+    def _is_platform_bot_record(
+        self,
+        record: Any,
+        bot_identifiers: set[str] | None = None,
+    ) -> bool:
         """判断平台记录是否为 Bot 消息。"""
+        identifiers = bot_identifiers or set(self.DEFAULT_BOT_IDENTIFIERS)
         sender_id = str(
             self._get_platform_record_field(record, "sender_id", "") or ""
         ).lower()
@@ -296,12 +342,17 @@ class LlmMixin:
         if isinstance(content, dict):
             content_type = str(content.get("type") or "").lower()
 
-        return sender_id == "bot" or sender_name == "bot" or content_type == "bot"
+        return (
+            sender_id in identifiers
+            or sender_name in identifiers
+            or content_type in identifiers
+        )
 
     def _format_platform_history_as_context(
         self,
         records: list[Any],
         include_bot_messages: bool,
+        bot_identifiers: set[str] | None = None,
         max_chars: int = 0,
     ) -> tuple[dict[str, str] | None, int, int]:
         """将平台聊天流水格式化为单条上下文消息。"""
@@ -309,7 +360,7 @@ class LlmMixin:
         used_count = 0
 
         for record in records:
-            is_bot = self._is_platform_bot_record(record)
+            is_bot = self._is_platform_bot_record(record, bot_identifiers)
             if not include_bot_messages and is_bot:
                 continue
 
@@ -409,6 +460,7 @@ class LlmMixin:
                 self._format_platform_history_as_context(
                     platform_records,
                     include_bot_messages=settings["include_bot_messages"],
+                    bot_identifiers=settings["bot_identifiers"],
                     max_chars=settings["platform_context_max_chars"],
                 )
             )
@@ -425,8 +477,8 @@ class LlmMixin:
                 effective_history = conversation_history
         elif source_mode == "hybrid":
             if platform_context:
-                # 平台流水放在尾部，使其更接近最终主动 prompt。
-                effective_history = [*conversation_history, platform_context]
+                # 将 system 上下文置于首位，降低不同 provider 对 system role 的处理差异。
+                effective_history = [platform_context, *conversation_history]
             else:
                 logger.warning(
                     f"[主动消息] 上下文模式为 hybrid，但平台流水为空，仅使用 conversation_history ({conversation_count}) 条喵。"

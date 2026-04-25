@@ -80,6 +80,12 @@
                         "type": "bool",
                         "default": true,
                         "hint": "开启后会把 Bot 在平台侧的发言也注入，便于模型理解上下文轮次"
+                    },
+                    "bot_identifiers": {
+                        "description": "Bot 标识符列表（逗号分隔）",
+                        "type": "string",
+                        "default": "bot",
+                        "hint": "用于识别平台流水中的 Bot 消息，支持多个值，示例: bot,astrbot,assistant"
                     }
                 }
             },
@@ -345,6 +351,12 @@
                         "type": "bool",
                         "default": true,
                         "hint": "开启后会把 Bot 在平台侧的发言也注入，便于模型理解上下文轮次"
+                    },
+                    "bot_identifiers": {
+                        "description": "Bot 标识符列表（逗号分隔）",
+                        "type": "string",
+                        "default": "bot",
+                        "hint": "用于识别平台流水中的 Bot 消息，支持多个值，示例: bot,astrbot,assistant"
                     }
                 }
             },
