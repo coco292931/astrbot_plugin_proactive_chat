@@ -1,7 +1,7 @@
 <!-- markdownlint-disable MD029 -->
 # 🤝 为 主动消息插件 (Proactive Chat) 做出贡献
 
-感谢您有兴趣为 **AstrBot 主动消息插件** 做出贡献！无论是修复 Bug、添加新功能，还是改进文档，您的每一次贡献都能让这个项目变得更好。
+感谢您有兴趣为 **AstrBot 主动消息插件** 做出贡献！无论是修复 Bug，添加新功能，还是改进文档，您的每一次贡献都能让这个项目变得更好。
 
 为了营造一个开放和热情的社区环境，我们采用了 [贡献者契约](CODE_OF_CONDUCT.md) 作为我们的行为准则。请确保您在参与贡献之前，已经阅读并同意遵守它。
 
@@ -40,7 +40,7 @@
 
 ### 开发环境准备
 
-0. 确保你要 `开发或修复` 的 `功能或问题` 没有与现有的最新进度重复。
+0. 确保你要 `开发的功能` 或 `修复的问题` 没有与现有的最新进度重复。
 1. Fork 本仓库到您的 GitHub 账号。
 2. 克隆您的 Fork 仓库到本地：
 
@@ -105,7 +105,8 @@
 
 - @Souler: "创世神"，伟大无需多言。感谢他提供了一个这么好的平台，以及对 AstrBot 的持续维护。
 - @Aloys233: 为本插件提供通知系统、遥测系统等远端服务支持，以及众多日常开发中的便利。
-- @Alaye-Dong & @TheFurnia 帮助修订文档。
+- @Sisyphbaous-DT-Project: 为主动消息提供了更灵活的上下文来源选择。
+- @Alaye-Dong & @TheFurnia: 帮助修订文档。
 - @NickWoluff: 提供了解决主动消息插件无法与部分插件兼容使用的问题的思路，并帮忙测试插件。
 - @victical: 提供了时区报错的解决方案。
 - @HunterJuly: 在插件的早期开发中提供了许多有价值的建议并测试出了插件的缺陷。
@@ -122,6 +123,7 @@
 - @Gemini-3.1-Pro
 - @GPT-5.3-Codex
 - @GPT-5.4
+- @GPT-5.5
 - @Kimi-For-Coding
 - @DeepSeek-v3.2-exp
 - @DeepSeek-v3.2
@@ -130,3 +132,4 @@
 - @dosubot[bot]
 - @gemini-code-assist[bot]
 - @kilo-code-bot[bot]
+- @dependabot[bot]
