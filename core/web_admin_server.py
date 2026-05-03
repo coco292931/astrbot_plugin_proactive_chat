@@ -641,6 +641,15 @@ class WebAdminServer:
                     self.plugin.session_data[normalized].pop("next_trigger_time", None)
                     await self.plugin._save_data_internal()
 
+            if removed:
+                logger.info(
+                    f"[主动消息] Web 管理端已取消 {self.plugin._get_session_log_str(normalized)} 的调度任务喵。"
+                )
+            else:
+                logger.warning(
+                    f"[主动消息] Web 管理端请求取消 {self.plugin._get_session_log_str(normalized)} 的调度任务喵，但当前未找到可取消任务。"
+                )
+
             await self._broadcast_update("jobs")
             return {"ok": True, "session": normalized, "removed": removed}
 
