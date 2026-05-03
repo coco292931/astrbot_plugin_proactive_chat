@@ -86,11 +86,13 @@ class SchedulerMixin:
         except Exception as e:
             logger.error(f"[主动消息] 设置自动触发计时器失败喵: {e}")
 
-    async def _cancel_auto_trigger(self, session_id: str) -> None:
+    async def _cancel_auto_trigger(self, session_id: str) -> bool:
         """取消指定会话的自动主动消息触发器。"""
+        cancelled = False
         if session_id in self.auto_trigger_timers:
             try:
                 self.auto_trigger_timers[session_id].cancel()
+                cancelled = True
                 logger.info(
                     f"[主动消息] 已取消 {self._get_session_log_str(session_id)} 的自动触发计时器喵。"
                 )
@@ -98,10 +100,11 @@ class SchedulerMixin:
                 logger.warning(f"[主动消息] 取消自动触发计时器时出错喵: {e}")
             finally:
                 del self.auto_trigger_timers[session_id]
+        return cancelled
 
-    async def _cancel_all_related_auto_triggers(self, session_id: str) -> None:
+    async def _cancel_all_related_auto_triggers(self, session_id: str) -> bool:
         """取消指定会话的自动触发器（UMO 直接匹配）。"""
-        await self._cancel_auto_trigger(session_id)
+        return await self._cancel_auto_trigger(session_id)
 
     def _is_friend_type(self, msg_type: str) -> bool:
         return "Friend" in msg_type or "Private" in msg_type
@@ -230,11 +233,12 @@ class SchedulerMixin:
         """为所有启用了自动触发功能的会话设置自动主动消息触发器。"""
         logger.info("[主动消息] 开始检查并设置自动主动消息触发器喵...")
 
-        # 统计：成功创建、已存在持久化任务、无效/未配置、未启用自动触发
+        # 统计：成功创建、已存在持久化任务、无效/未配置、未启用自动触发、已达未回复上限
         auto_trigger_count = 0
         skipped_existing = 0
         skipped_invalid = 0
         skipped_disabled = 0
+        skipped_max_unanswered = 0
 
         # 私聊 session_list 批量注册
         friend_settings = self.config.get("friend_settings", {})
@@ -251,6 +255,8 @@ class SchedulerMixin:
                     skipped_invalid += 1
                 elif result == "disabled":
                     skipped_disabled += 1
+                elif result == "max_unanswered":
+                    skipped_max_unanswered += 1
 
         # 群聊 session_list 批量注册
         group_settings = self.config.get("group_settings", {})
@@ -267,6 +273,8 @@ class SchedulerMixin:
                     skipped_invalid += 1
                 elif result == "disabled":
                     skipped_disabled += 1
+                elif result == "max_unanswered":
+                    skipped_max_unanswered += 1
 
         # 汇总日志
         has_auto_trigger_config = False
@@ -289,6 +297,10 @@ class SchedulerMixin:
                     reasons.append(f"{skipped_invalid} 个会话无效或未配置")
                 if skipped_disabled:
                     reasons.append(f"{skipped_disabled} 个会话未启用自动触发")
+                if skipped_max_unanswered:
+                    reasons.append(
+                        f"{skipped_max_unanswered} 个会话已达到未回复次数上限"
+                    )
                 reason_str = "，".join(reasons) if reasons else "未发现可设置的会话"
                 logger.info(
                     f"[主动消息] 检测到自动主动消息配置，但没有需要设置的触发器喵（{reason_str}）。"
@@ -298,14 +310,15 @@ class SchedulerMixin:
         else:
             logger.info(
                 f"[主动消息] 已为 {auto_trigger_count} 个会话设置自动主动消息触发器喵。"
-                f"（跳过：已有任务 {skipped_existing}，无效 {skipped_invalid}，未启用 {skipped_disabled}）"
+                f"（跳过：已有任务 {skipped_existing}，无效 {skipped_invalid}，未启用 {skipped_disabled}，"
+                f"已达未回复上限 {skipped_max_unanswered}）"
             )
 
     async def _setup_auto_trigger_for_session_config(
         self, settings: dict, session_id: str
     ) -> str:
         """为指定会话配置设置自动触发器。"""
-        # 返回值：created/existing/invalid/disabled，用于日志汇总与原因归类
+        # 返回值：created/existing/invalid/disabled/max_unanswered，用于日志汇总与原因归类
         session_config = self._get_session_config(session_id)
         if not session_config or not session_config.get("enable", False):
             # 未命中 session_list 或被禁用，都视为无效会话
@@ -330,6 +343,18 @@ class SchedulerMixin:
                 f"跳过自动触发器设置以避免冲突喵。"
             )
             return "existing"
+
+        schedule_conf = session_config.get("schedule_settings", {})
+        max_unanswered = schedule_conf.get("max_unanswered_times", 3)
+        unanswered_count = self.session_data.get(resolved_session_id, {}).get(
+            "unanswered_count", 0
+        )
+        if max_unanswered > 0 and unanswered_count >= max_unanswered:
+            logger.info(
+                f"[主动消息] {self._get_session_log_str(resolved_session_id, session_config)} 的未回复次数 ({unanswered_count}) "
+                f"已达到上限 ({max_unanswered})，跳过初始化自动触发器设置喵。"
+            )
+            return "max_unanswered"
 
         logger.debug(
             f"[主动消息] 正在为 {self._get_session_log_str(resolved_session_id)} 设置自动触发器喵。"
@@ -361,7 +386,7 @@ class SchedulerMixin:
             async with self.data_lock:
                 await self._save_data_internal()
 
-        logger.info(f"[主动消息] 会话数据条目数: {len(self.session_data)}")
+        logger.debug(f"[主动消息] 会话数据条目数: {len(self.session_data)}")
 
         # 遍历持久化任务并恢复调度器
         for session_id, session_info in list(self.session_data.items()):

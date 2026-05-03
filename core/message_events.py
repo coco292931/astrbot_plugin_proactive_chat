@@ -56,18 +56,25 @@ class EventsMixin:
                 ] = current_time
 
         # 取消自动触发：同时处理原键与规范化键，避免漏取消
-        await self._cancel_all_related_auto_triggers(session_id)
+        auto_trigger_cancelled = await self._cancel_all_related_auto_triggers(session_id)
         if normalized_session_id != session_id:
-            await self._cancel_all_related_auto_triggers(normalized_session_id)
+            normalized_cancelled = await self._cancel_all_related_auto_triggers(
+                normalized_session_id
+            )
+            auto_trigger_cancelled = auto_trigger_cancelled or normalized_cancelled
 
-        # 避免重复刷屏日志
+        # 避免重复刷屏日志；仅在确实取消了自动触发计时器时打印
         session_config = self._get_session_config(normalized_session_id)
-        if session_config and session_config.get("enable", False):
-            if normalized_session_id not in self.first_message_logged:
-                self.first_message_logged.add(normalized_session_id)
-                logger.info(
-                    f"[主动消息] 已记录 {self._get_session_log_str(normalized_session_id, session_config)} 的消息时间并取消自动触发喵。"
-                )
+        if (
+            auto_trigger_cancelled
+            and session_config
+            and session_config.get("enable", False)
+            and normalized_session_id not in self.first_message_logged
+        ):
+            self.first_message_logged.add(normalized_session_id)
+            logger.info(
+                f"[主动消息] 已记录 {self._get_session_log_str(normalized_session_id, session_config)} 的消息时间并取消自动触发喵。"
+            )
 
         # 未启用或配置无效则跳过
         session_config = self._get_session_config(normalized_session_id)
@@ -180,20 +187,27 @@ class EventsMixin:
                 )
 
         # 取消自动触发
-        await self._cancel_all_related_auto_triggers(session_id)
+        auto_trigger_cancelled = await self._cancel_all_related_auto_triggers(session_id)
         if normalized_session_id != session_id:
-            await self._cancel_all_related_auto_triggers(normalized_session_id)
+            normalized_cancelled = await self._cancel_all_related_auto_triggers(
+                normalized_session_id
+            )
+            auto_trigger_cancelled = auto_trigger_cancelled or normalized_cancelled
 
         # 读取当前会话配置，供日志与启用状态判断复用，避免重复查询。
         session_config = self._get_session_config(normalized_session_id)
 
-        # 避免重复刷屏日志
-        if session_config and session_config.get("enable", False):
-            if normalized_session_id not in self.first_message_logged:
-                self.first_message_logged.add(normalized_session_id)
-                logger.info(
-                    f"[主动消息] 已记录 {self._get_session_log_str(normalized_session_id, session_config)} 的消息时间并取消自动触发喵。"
-                )
+        # 避免重复刷屏日志；仅在确实取消了自动触发计时器时打印
+        if (
+            auto_trigger_cancelled
+            and session_config
+            and session_config.get("enable", False)
+            and normalized_session_id not in self.first_message_logged
+        ):
+            self.first_message_logged.add(normalized_session_id)
+            logger.info(
+                f"[主动消息] 已记录 {self._get_session_log_str(normalized_session_id, session_config)} 的消息时间并取消自动触发喵。"
+            )
 
         # 未启用或配置无效则跳过
         if not session_config or not session_config.get("enable", False):
