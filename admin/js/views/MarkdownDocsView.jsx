@@ -362,7 +362,7 @@ function MarkdownDocsView() {
                         <Box className="notifications-title-row">
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
                                 <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                                    文档浏览 ({markdownFiles.length})
+                                    {`文档浏览 (当前共 ${markdownFiles.length} 份文档)`}
                                 </Typography>
                                 <Chip
                                     label={currentDocumentPath ? `当前：${currentDocumentTitle}` : '请选择文档'}

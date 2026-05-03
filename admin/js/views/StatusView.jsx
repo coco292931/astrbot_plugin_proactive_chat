@@ -474,7 +474,7 @@ function StatusView({ onRefresh }) {
                         <Box className="status-timers-header-row">
                             <div>
                                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-                                    会话计时器可视化 ({timerCards.length})
+                                    {`会话计时器可视化 (当前共 ${timerCards.length} 个计时器)`}
                                 </Typography>
                                 <Typography variant="body2" className="tasks-header-subtitle">
                                     实时展示自动触发检测与群沉默检测的倒计时、进度和会话状态。此处卡片的倒计时结束后会进入任务管理页面

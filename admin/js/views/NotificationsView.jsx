@@ -122,7 +122,7 @@ function NotificationsView({ onRefresh }) {
                         <Box className="notifications-title-row">
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
                                 <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                                    通知中心 ({notificationsMeta.total_count || notifications.length})
+                                    {`通知中心 (当前共 ${notificationsMeta.total_count || notifications.length} 条通知)`}
                                 </Typography>
                                 <Box
                                     sx={{

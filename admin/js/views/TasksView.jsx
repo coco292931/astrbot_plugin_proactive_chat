@@ -298,7 +298,7 @@ function TasksView({ onRefresh }) {
             <Box className="tasks-header-row">
                 <div>
                     <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-                        当前调度任务 ({jobs.length})
+                        {`调度任务 (当前共 ${jobs.length} 个调度任务)`}
                     </Typography>
                 </div>
                 <Button variant="contained" onClick={onRefresh} startIcon={<span>🔄</span>} sx={{ borderRadius: 3, boxShadow: 'none', px: 2.25 }}>
