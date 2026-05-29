@@ -25,8 +25,8 @@
 ### 🔧 Chore (杂项)
 
 - 移除了对 `fastapi` 和 `uvicorn` 的依赖版本上限 by @Ayleovelle in #71
-- ruff 格式化 by @DBJD-CR by @DBJD-CR in #72
-- 更新插件元数据 by @DBJD-CR by @DBJD-CR in #72
+- ruff 格式化 by @DBJD-CR in #72
+- 更新插件元数据 by @DBJD-CR in #72
 
 ---
 
