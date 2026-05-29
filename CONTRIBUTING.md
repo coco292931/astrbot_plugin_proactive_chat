@@ -106,6 +106,7 @@
 - @Souler: "创世神"，伟大无需多言。感谢他提供了一个这么好的平台，以及对 AstrBot 的持续维护。
 - @Aloys233: 为本插件提供通知系统、遥测系统等远端服务支持，以及众多日常开发中的便利。
 - @Sisyphbaous-DT-Project: 为主动消息提供了更灵活的上下文来源选择。
+- @Ayleovelle: 优化了 WebUI 加载与依赖相关问题。
 - @Alaye-Dong & @TheFurnia: 帮助修订文档。
 - @NickWoluff: 提供了解决主动消息插件无法与部分插件兼容使用的问题的思路，并帮忙测试插件。
 - @victical: 提供了时区报错的解决方案。
@@ -124,6 +125,7 @@
 - @GPT-5.3-Codex
 - @GPT-5.4
 - @GPT-5.5
+- @Claude Opus 4.7
 - @Kimi-For-Coding
 - @DeepSeek-v3.2-exp
 - @DeepSeek-v3.2

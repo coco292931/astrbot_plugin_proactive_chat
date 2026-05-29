@@ -5,6 +5,40 @@
 <!-- markdownlint-disable MD041 -->
 # ChangeLog
 
+# 2026/05/29 v1.2.4
+
+## 🚀 What's Changed
+
+### ✨ New Features (新功能)
+
+- 为 Web UI 的第三方脚本添加自适应 CDN 选择机制，基于浏览器的时区和语言为中国大陆用户提供更好的支持 by @Ayleovelle in #71
+
+### 🐛 Bug Fixes (修复)
+
+- 优化了遥测事件容易触发请求频率超限的问题，并防止在限流或网络连接问题期间丢失遥测数据 by @Ayleovelle in #71
+- 优化了 WebUI 加载相关的问题并提升了加载速度 by @DBJD-CR in #72
+
+### 📚 Documentation (文档)
+
+- 修订更新日志 by @DBJD-CR in #72
+
+### 🔧 Chore (杂项)
+
+- 移除了对 `fastapi` 和 `uvicorn` 的依赖版本上限 by @Ayleovelle in #71
+- ruff 格式化 by @DBJD-CR in #72
+- 更新插件元数据 by @DBJD-CR in #72
+
+---
+
+## ❤️ New Contributors
+
+- @Ayleovelle made their first contribution in #71
+
+**Full Changelog**: https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/compare/v1.2.3...v1.2.4
+
+<details>
+<summary>点击查看历史更新记录 (History)</summary>
+
 # 2026/05/06 v1.2.3
 
 ## 🚀 What's Changed
@@ -46,9 +80,6 @@
 **Full Changelog**: https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/compare/v1.2.2...v1.2.3
 
 ---
-
-<details>
-<summary>点击查看历史更新记录 (History)</summary>
 
 # 2026/04/02 v1.2.2
 
