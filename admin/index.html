@@ -55,74 +55,123 @@
             '/mermaid@11.4.1/dist/mermaid.min.js'
         ];
 
-        // 通过 DOM API 创建 script 元素，兼容 CSP 且比 document.write 更可靠。
-        var head = document.head || document.getElementsByTagName('head')[0];
-        window.__PROACTIVE_LIBS_COUNT = libs.length;
-        window.__PROACTIVE_LIBS_LOADED = 0;
-        window.__PROACTIVE_PENDING_SCRIPTS = [];
-
-        window.__PROACTIVE_TRIGGER_PENDING = function() {
-            if (window.__PROACTIVE_LIBS_LOADED < window.__PROACTIVE_LIBS_COUNT) {
-                return;
-            }
+        // 命名空间收拢，避免污染 window 全局变量并方便调试
+        window.ProactiveLoader = {
+            libsCount: libs.length,
+            libsLoaded: 0,
+            pendingScripts: [],
+            scriptRunning: false,
             
-            // 当所有外部 CDN 依赖就绪后，串行执行队列里的脚本任务
-            if (window.__PROACTIVE_PENDING_SCRIPTS.length > 0) {
-                var task = window.__PROACTIVE_PENDING_SCRIPTS.shift();
-                task();
+            // 弹出全局 UI 错误信息并停止加载
+            showError: function(msg) {
+                console.error("[ProactiveLoader] " + msg);
+                var text = document.getElementById('boot-text');
+                if (text) {
+                    text.textContent = msg;
+                    text.style.color = '#B3261E';
+                }
+            },
+
+            // 触发并调度脚本队列的执行状态机
+            triggerPendingScripts: function() {
+                if (this.libsLoaded < this.libsCount) {
+                    return;
+                }
+                
+                // 如果当前已有脚本正在执行加载/编译，则暂停触发，等待其加载/编译完毕回调
+                if (this.scriptRunning) {
+                    return;
+                }
+
+                if (this.pendingScripts.length > 0) {
+                    var task = this.pendingScripts.shift();
+                    this.scriptRunning = true;
+                    task();
+                }
+            },
+
+            // 向队列添加一个待执行的文件加载任务
+            queueScript: function(src, isBabel) {
+                var self = this;
+                this.pendingScripts.push(function() {
+                    if (isBabel) {
+                        fetch(src)
+                            .then(function(res) {
+                                if (!res.ok) {
+                                    throw new Error("HTTP error " + res.status);
+                                }
+                                return res.text();
+                            })
+                            .then(function(code) {
+                                if (typeof Babel === 'undefined') {
+                                    self.showError("Babel is not loaded, failed to compile: " + src);
+                                    return; // 终止加载，不恢复 scriptRunning，不触发后续队列
+                                }
+
+                                try {
+                                    var transformed = Babel.transform(code, {
+                                        presets: ['react']
+                                    }).code;
+
+                                    var s = document.createElement('script');
+                                    s.text = transformed;
+                                    document.body.appendChild(s);
+
+                                    // 执行成功，释放锁并调度下一个脚本
+                                    self.scriptRunning = false;
+                                    self.triggerPendingScripts();
+                                } catch (e) {
+                                    self.showError("Failed to compile JSX file " + src + ": " + e.message);
+                                }
+                            })
+                            .catch(function(err) {
+                                self.showError("Failed to fetch JSX script " + src + ": " + err.message);
+                            });
+                    } else {
+                        var s = document.createElement('script');
+                        s.src = src;
+                        s.onload = function() {
+                            self.scriptRunning = false;
+                            self.triggerPendingScripts();
+                        };
+                        s.onerror = function() {
+                            self.showError("Failed to load script: " + src);
+                        };
+                        document.body.appendChild(s);
+                    }
+                });
+                this.triggerPendingScripts();
+            },
+
+            // 向队列添加一个内联闭包函数任务
+            queueTask: function(taskFn) {
+                var self = this;
+                this.pendingScripts.push(function() {
+                    try {
+                        taskFn();
+                        self.scriptRunning = false;
+                        self.triggerPendingScripts();
+                    } catch (e) {
+                        self.showError("Inline task failed: " + e.message);
+                    }
+                });
+                this.triggerPendingScripts();
             }
         };
 
+        // 通过 DOM API 创建 script 元素，兼容 CSP 且比 document.write 更可靠。
+        var head = document.head || document.getElementsByTagName('head')[0];
         for (var i = 0; i < libs.length; i++) {
             var s = document.createElement('script');
             s.src = base + libs[i];
             s.async = false; // 强迫动态脚本按数组中的逻辑顺序同步下载并执行
             if (i < 2) s.crossOrigin = 'anonymous';
             s.onload = s.onerror = function() {
-                window.__PROACTIVE_LIBS_LOADED++;
-                window.__PROACTIVE_TRIGGER_PENDING();
+                window.ProactiveLoader.libsLoaded++;
+                window.ProactiveLoader.triggerPendingScripts();
             };
             head.appendChild(s);
         }
-
-        window.__PROACTIVE_QUEUE_SCRIPT = function(src, isBabel) {
-            window.__PROACTIVE_PENDING_SCRIPTS.push(function() {
-                if (isBabel) {
-                    // 如果是 Babel 编译的 JSX 脚本，直接通过 ajax/fetch 获取文本并使用 Babel 编译，
-                    // 彻底避开浏览器动态 script 节点对 text/babel 识别困难的问题。
-                    // 动态执行编译后的 js 代码
-                    fetch(src)
-                        .then(function(res) { return res.text(); })
-                        .then(function(code) {
-                            if (typeof Babel !== 'undefined') {
-                                // 使用 Babel.transform 将 JSX 转换为 ES5 兼容的普通 JS 代码。
-                                // options 设置 presets 包含 'react' 即可。
-                                var transformed = Babel.transform(code, {
-                                    presets: ['react']
-                                }).code;
-                                
-                                // 创建一个普通的 script 标签并注入编译好的代码以在全局作用域执行
-                                var s = document.createElement('script');
-                                s.text = transformed;
-                                document.body.appendChild(s);
-                            }
-                            window.__PROACTIVE_TRIGGER_PENDING();
-                        })
-                        .catch(function(err) {
-                            console.error("Failed to load Babel script: " + src, err);
-                            window.__PROACTIVE_TRIGGER_PENDING();
-                        });
-                } else {
-                    var s = document.createElement('script');
-                    s.src = src;
-                    s.onload = s.onerror = function() {
-                        window.__PROACTIVE_TRIGGER_PENDING();
-                    };
-                    document.body.appendChild(s);
-                }
-            });
-            window.__PROACTIVE_TRIGGER_PENDING();
-        };
     })();
     </script>
 </head>
@@ -152,17 +201,15 @@
 
     <!-- 工具脚本必须先于 JSX 模块加载，以便后者可直接使用 window 上的工具对象。 -->
     <script>
-        window.__PROACTIVE_QUEUE_SCRIPT("js/utils/auth.js", false);
-        window.__PROACTIVE_QUEUE_SCRIPT("js/utils/http.js", false);
-        window.__PROACTIVE_QUEUE_SCRIPT("js/utils/formatters.js", false);
-        window.__PROACTIVE_QUEUE_SCRIPT("js/utils/markdown.js", false);
+        window.ProactiveLoader.queueScript("js/utils/auth.js", false);
+        window.ProactiveLoader.queueScript("js/utils/http.js", false);
+        window.ProactiveLoader.queueScript("js/utils/formatters.js", false);
+        window.ProactiveLoader.queueScript("js/utils/markdown.js", false);
     </script>
 
     <script>
         // 鉴权探测流程脚本，必须在 window.AuthUtil 声明后运行。
-        window.__PROACTIVE_QUEUE_SCRIPT("", false); // 用一个占位任务确保 auth-info 鉴权在 utils 之后并在 jsx 之前运行
-        var originalTask = window.__PROACTIVE_PENDING_SCRIPTS.pop();
-        window.__PROACTIVE_PENDING_SCRIPTS.push(function() {
+        window.ProactiveLoader.queueTask(function() {
             (function () {
                 // 该标记用于阻止 React 应用过早启动，直到鉴权探测流程结束后再解除。
                 window.__PROACTIVE_AUTH_PENDING = true;
@@ -187,17 +234,8 @@
                 }
 
                 function showError(msg) {
-                    // 启动失败时直接在骨架屏上输出错误信息，避免用户只看到空白页。
-                    const text = document.getElementById('boot-text');
-                    if (text) {
-                        text.textContent = msg;
-                        text.style.color = '#B3261E';
-                    }
+                    window.ProactiveLoader.showError(msg);
                 }
-
-                // 注入全局 Auth 状态
-                window.__proceed = proceed;
-                window.__showError = showError;
 
                 function showInfo(msg) {
                     const text = document.getElementById('boot-text');
@@ -336,26 +374,23 @@
                         showError('管理端连接失败，请检查插件状态');
                     });
             })();
-            
-            // 本脚本为内联任务，执行完后直接触发下一个队列元素加载
-            window.__PROACTIVE_TRIGGER_PENDING();
         });
     </script>
 
     <!-- 以下 JSX 文件按“基础能力 -> 布局组件 -> 页面视图 -> 应用入口”的顺序加载。 -->
     <script>
-        window.__PROACTIVE_QUEUE_SCRIPT("js/context/AppContext.jsx", true);
-        window.__PROACTIVE_QUEUE_SCRIPT("js/hooks/useApi.js", true);
-        window.__PROACTIVE_QUEUE_SCRIPT("js/hooks/useWebSocket.js", true);
-        window.__PROACTIVE_QUEUE_SCRIPT("js/components/layout/Sidebar.jsx", true);
-        window.__PROACTIVE_QUEUE_SCRIPT("js/components/layout/Header.jsx", true);
-        window.__PROACTIVE_QUEUE_SCRIPT("js/views/StatusView.jsx", true);
-        window.__PROACTIVE_QUEUE_SCRIPT("js/components/config/ConfigRenderer.jsx", true);
-        window.__PROACTIVE_QUEUE_SCRIPT("js/views/ConfigView.jsx", true);
-        window.__PROACTIVE_QUEUE_SCRIPT("js/views/TasksView.jsx", true);
-        window.__PROACTIVE_QUEUE_SCRIPT("js/views/NotificationsView.jsx", true);
-        window.__PROACTIVE_QUEUE_SCRIPT("js/views/MarkdownDocsView.jsx", true);
-        window.__PROACTIVE_QUEUE_SCRIPT("js/app.jsx", true);
+        window.ProactiveLoader.queueScript("js/context/AppContext.jsx", true);
+        window.ProactiveLoader.queueScript("js/hooks/useApi.js", true);
+        window.ProactiveLoader.queueScript("js/hooks/useWebSocket.js", true);
+        window.ProactiveLoader.queueScript("js/components/layout/Sidebar.jsx", true);
+        window.ProactiveLoader.queueScript("js/components/layout/Header.jsx", true);
+        window.ProactiveLoader.queueScript("js/views/StatusView.jsx", true);
+        window.ProactiveLoader.queueScript("js/components/config/ConfigRenderer.jsx", true);
+        window.ProactiveLoader.queueScript("js/views/ConfigView.jsx", true);
+        window.ProactiveLoader.queueScript("js/views/TasksView.jsx", true);
+        window.ProactiveLoader.queueScript("js/views/NotificationsView.jsx", true);
+        window.ProactiveLoader.queueScript("js/views/MarkdownDocsView.jsx", true);
+        window.ProactiveLoader.queueScript("js/app.jsx", true);
     </script>
 </body>
 
