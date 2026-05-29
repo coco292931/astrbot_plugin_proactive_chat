@@ -147,14 +147,15 @@ class TelemetryManager:
 
         return await self._send_batch([event])
 
-    async def _send_batch(self, events: list[dict]) -> bool:
+    async def _send_batch(self, events: list[dict], *, requeue_on_failure: bool = True) -> bool:
         """将一批事件打包发送到服务端。
 
         这是所有遥测发送的统一出口。支持单条或多条事件，服务端 ingest API
         原生支持 batch 数组结构，无需额外适配。
 
         返回 True 表示发送成功，False 表示失败（已触发熔断或网络异常）。
-        失败时事件会被转入 backlog 等待恢复后补发。
+        当 requeue_on_failure=True 时，失败事件会被转入 backlog 等待恢复后补发；
+        当 requeue_on_failure=False 时（drain 调用），由调用方自行处理失败事件。
         """
         if not events:
             return True
@@ -162,7 +163,8 @@ class TelemetryManager:
         now = time.monotonic()
         # 再次检查熔断状态（可能在 end_flow 调用时已经进入熔断）。
         if now < self._rate_limited_until:
-            self._backlog.extend(events)
+            if requeue_on_failure:
+                self._backlog.extend(events)
             return False
 
         payload = {
@@ -196,7 +198,8 @@ class TelemetryManager:
                 if response.status == 429:
                     # 触发熔断，当前批次事件转入 backlog 等待恢复后补发。
                     self._rate_limited_until = now + self._RATE_LIMIT_COOLDOWN
-                    self._backlog.extend(events)
+                    if requeue_on_failure:
+                        self._backlog.extend(events)
                     logger.warning(
                         f"[主动消息] 遥测请求频率超限喵，将静默 {self._RATE_LIMIT_COOLDOWN} 秒，"
                         f"{len(events)} 条事件已缓冲。"
@@ -210,7 +213,8 @@ class TelemetryManager:
         except aiohttp.ClientConnectionError as e:
             # 连接失败触发短暂熔断（60秒），事件转入 backlog。
             self._rate_limited_until = now + 60
-            self._backlog.extend(events)
+            if requeue_on_failure:
+                self._backlog.extend(events)
             logger.debug(
                 f"[主动消息] 遥测连接失败喵，静默 60 秒，{len(events)} 条事件已缓冲: {e}"
             )
@@ -232,24 +236,24 @@ class TelemetryManager:
 
         由阈值触发（攒满 _FLUSH_THRESHOLD 条）或超时触发（_FLUSH_TIMEOUT 秒）调用。
         如果当前处于熔断状态，事件会整批转入 backlog 等待恢复后补发。
+
+        注意：本方法只负责搬运并发送事件，不操作定时器。调用方需自行管理计时器生命周期。
         """
         if not self._feature_buffer:
             return
         events = self._feature_buffer
         self._feature_buffer = []
-        # 取消可能还在等待的超时任务（阈值触发时超时还没到）。
-        self._cancel_flush_timer()
         await self._send_batch(events)
 
     async def _flush_timer_expired(self) -> None:
         """超时回调：_FLUSH_TIMEOUT 秒内未攒满阈值，强制 flush 当前 buffer。"""
         try:
             await asyncio.sleep(self._FLUSH_TIMEOUT)
+            # 超时路径：先清除自身引用再 flush，避免 flush 内部尝试取消已完成的自身任务。
+            self._flush_timer_task = None
             await self._flush_feature_buffer()
         except asyncio.CancelledError:
             pass
-        finally:
-            self._flush_timer_task = None
 
     def _cancel_flush_timer(self) -> None:
         """取消正在等待的超时 flush 任务。"""
@@ -289,7 +293,7 @@ class TelemetryManager:
                 for _ in range(min(self._DRAIN_BATCH_SIZE, len(self._backlog))):
                     batch.append(self._backlog.popleft())
 
-                success = await self._send_batch(batch)
+                success = await self._send_batch(batch, requeue_on_failure=False)
                 if not success:
                     # 发送失败，把事件放回 backlog 头部，停止本轮 drain。
                     for event in reversed(batch):
@@ -375,6 +379,7 @@ class TelemetryManager:
 
         # 判断是否达到阈值：满了就立即 flush。
         if len(self._feature_buffer) >= self._FLUSH_THRESHOLD:
+            self._cancel_flush_timer()
             await self._flush_feature_buffer()
         else:
             # 未满阈值：确保超时计时器在运行（首条事件时启动）。

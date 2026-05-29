@@ -21,11 +21,16 @@
          根据用户时区/语言自动选择 CDN：国内走 npmmirror，国外走 unpkg。 -->
     <script>
     (function() {
-        // 通过时区和语言判断是否为国内用户。
-        var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+        // 通过时区和语言判断是否为国内用户，安全降级到 unpkg。
+        var tz = '';
+        try {
+            if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
+                tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+            }
+        } catch (e) {}
         var lang = (navigator.language || '').toLowerCase();
         var isCN = tz === 'Asia/Shanghai' || tz === 'Asia/Chongqing' || tz === 'Asia/Urumqi'
-                || lang.startsWith('zh');
+                || lang === 'zh-cn';
 
         var base = isCN ? 'https://registry.npmmirror.com' : 'https://unpkg.com';
         var libs = isCN ? [
@@ -50,10 +55,14 @@
             '/mermaid@11.4.1/dist/mermaid.min.js'
         ];
 
-        // document.write 在解析阶段同步写入，保持与原版 defer 相同的加载行为。
+        // 通过 DOM API 创建 script 元素，兼容 CSP 且比 document.write 更可靠。
+        var head = document.head || document.getElementsByTagName('head')[0];
         for (var i = 0; i < libs.length; i++) {
-            var cross = i < 2 ? ' crossorigin' : '';
-            document.write('<script' + cross + ' src="' + base + libs[i] + '" defer><\/script>');
+            var s = document.createElement('script');
+            s.src = base + libs[i];
+            s.defer = true;
+            if (i < 2) s.crossOrigin = 'anonymous';
+            head.appendChild(s);
         }
     })();
     </script>
