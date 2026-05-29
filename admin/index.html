@@ -17,16 +17,55 @@
     <!-- 全局样式表，承载布局、卡片、主题变量等基础样式。 -->
     <link rel="stylesheet" href="css/style.css">
 
-    <!-- 以 UMD 方式引入 React / Babel / MUI，方便纯静态资源场景直接运行。 -->
-    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" defer></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" defer></script>
-    <script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js" defer></script>
-    <script src="https://unpkg.com/@mui/material@5.16.7/umd/material-ui.production.min.js" defer></script>
-    <script src="https://unpkg.com/@emotion/react@11.13.3/dist/emotion-react.umd.min.js" defer></script>
-    <script src="https://unpkg.com/@emotion/styled@11.13.0/dist/emotion-styled.umd.min.js" defer></script>
-    <script src="https://unpkg.com/marked@14.1.2/marked.min.js" defer></script>
-    <script src="https://unpkg.com/dompurify@3.1.6/dist/purify.min.js" defer></script>
-    <script src="https://unpkg.com/mermaid@11.4.1/dist/mermaid.min.js" defer></script>
+    <!-- 以 UMD 方式引入 React / Babel / MUI。
+         根据用户时区/语言自动选择 CDN：国内走 npmmirror，国外走 unpkg。 -->
+    <script>
+    (function() {
+        // 通过时区和语言判断是否为国内用户，安全降级到 unpkg。
+        var tz = '';
+        try {
+            if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
+                tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+            }
+        } catch (e) {}
+        var lang = (navigator.language || '').toLowerCase();
+        var isCN = tz === 'Asia/Shanghai' || tz === 'Asia/Chongqing' || tz === 'Asia/Urumqi'
+                || lang === 'zh-cn';
+
+        var base = isCN ? 'https://registry.npmmirror.com' : 'https://unpkg.com';
+        var libs = isCN ? [
+            '/react/18.2.0/files/umd/react.production.min.js',
+            '/react-dom/18.2.0/files/umd/react-dom.production.min.js',
+            '/@babel/standalone/7.25.6/files/babel.min.js',
+            '/@mui/material/5.16.7/files/umd/material-ui.production.min.js',
+            '/@emotion/react/11.13.3/files/dist/emotion-react.umd.min.js',
+            '/@emotion/styled/11.13.0/files/dist/emotion-styled.umd.min.js',
+            '/marked/14.1.2/files/marked.min.js',
+            '/dompurify/3.1.6/files/dist/purify.min.js',
+            '/mermaid/11.4.1/files/dist/mermaid.min.js'
+        ] : [
+            '/react@18.2.0/umd/react.production.min.js',
+            '/react-dom@18.2.0/umd/react-dom.production.min.js',
+            '/@babel/standalone@7.25.6/babel.min.js',
+            '/@mui/material@5.16.7/umd/material-ui.production.min.js',
+            '/@emotion/react@11.13.3/dist/emotion-react.umd.min.js',
+            '/@emotion/styled@11.13.0/dist/emotion-styled.umd.min.js',
+            '/marked@14.1.2/marked.min.js',
+            '/dompurify@3.1.6/dist/purify.min.js',
+            '/mermaid@11.4.1/dist/mermaid.min.js'
+        ];
+
+        // 通过 DOM API 创建 script 元素，兼容 CSP 且比 document.write 更可靠。
+        var head = document.head || document.getElementsByTagName('head')[0];
+        for (var i = 0; i < libs.length; i++) {
+            var s = document.createElement('script');
+            s.src = base + libs[i];
+            s.defer = true;
+            if (i < 2) s.crossOrigin = 'anonymous';
+            head.appendChild(s);
+        }
+    })();
+    </script>
 </head>
 
 <body>
