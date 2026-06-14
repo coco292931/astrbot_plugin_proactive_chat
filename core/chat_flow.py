@@ -264,6 +264,13 @@ class ProactiveCoreMixin:
                 )
                 return
 
+            if self._is_proactive_response_suppressed(response_text, session_config):
+                logger.info(
+                    "[主动消息] LLM 回复命中抑制发送文本，本次不发送主动消息，也不写入对话历史喵。"
+                )
+                await self._schedule_next_chat_and_save(session_id)
+                return
+
             # 发送消息与收尾
             await self._send_proactive_message(session_id, response_text)
 

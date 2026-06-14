@@ -28,6 +28,13 @@ class LlmMixin:
     PLATFORM_FILE_PLACEHOLDER = "[文件]"
     PLATFORM_FILE_PLACEHOLDER_TEMPLATE = "[文件{name}]"
     DEFAULT_BOT_IDENTIFIERS = {"bot"}
+    DEFAULT_SUPPRESSED_RESPONSE_TEXTS = (
+        "不回复",
+        "不生成主动消息",
+        "无需回复",
+        "不需要回复",
+        "不发送主动消息",
+    )
 
     context: Any
     timezone: Any
@@ -61,6 +68,41 @@ class LlmMixin:
             if item:
                 normalized.add(item.lower())
         return normalized or set(self.DEFAULT_BOT_IDENTIFIERS)
+
+    def _parse_suppressed_response_texts(self, value: Any) -> set[str]:
+        normalized: set[str] = set()
+        if isinstance(value, str):
+            raw_items = []
+            for line in value.replace("，", ",").splitlines():
+                raw_items.extend(part.strip() for part in line.split(","))
+        elif isinstance(value, (list, tuple, set)):
+            raw_items = [str(part).strip() for part in value]
+        else:
+            raw_items = []
+
+        for item in raw_items:
+            if item:
+                normalized.add(item)
+        return normalized
+
+    def _is_proactive_response_suppressed(
+        self, response_text: str, session_config: dict
+    ) -> bool:
+        """判断 LLM 主动回复是否命中“生成但不发送”的精确文本。"""
+        settings = session_config.get("response_suppression_settings")
+        if not isinstance(settings, dict):
+            raw_texts = self.DEFAULT_SUPPRESSED_RESPONSE_TEXTS
+        else:
+            raw_texts = settings.get(
+                "suppressed_response_texts",
+                self.DEFAULT_SUPPRESSED_RESPONSE_TEXTS,
+            )
+
+        suppressed_texts = self._parse_suppressed_response_texts(raw_texts)
+        if not suppressed_texts:
+            return False
+
+        return response_text.strip() in suppressed_texts
 
     def _sanitize_history_content(self, history: list) -> list:
         """清洗历史消息内容，确保所有内容均为纯文本字符串喵。"""
