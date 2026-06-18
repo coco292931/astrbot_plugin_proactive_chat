@@ -88,7 +88,7 @@ class LlmMixin:
     def _is_proactive_response_suppressed(
         self, response_text: str, session_config: dict
     ) -> bool:
-        """判断 LLM 主动回复是否命中“生成但不发送”的精确文本。"""
+        """判断 LLM 主动回复是否包含“生成但不发送”的触发文本。"""
         settings = session_config.get("response_suppression_settings")
         if not isinstance(settings, dict):
             raw_texts = self.DEFAULT_SUPPRESSED_RESPONSE_TEXTS
@@ -102,7 +102,8 @@ class LlmMixin:
         if not suppressed_texts:
             return False
 
-        return response_text.strip() in suppressed_texts
+        normalized_response = response_text.strip()
+        return any(text in normalized_response for text in suppressed_texts)
 
     def _sanitize_history_content(self, history: list) -> list:
         """清洗历史消息内容，确保所有内容均为纯文本字符串喵。"""
