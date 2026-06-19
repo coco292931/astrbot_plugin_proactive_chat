@@ -627,12 +627,14 @@ class SchedulerMixin:
                     random_interval
                 )
 
+                normalized_for_job = self._normalize_session_id(session_id)
+                self._purge_related_jobs(normalized_for_job)
                 self.scheduler.add_job(
                     self.check_and_chat,
                     "date",
                     run_date=run_date,
-                    args=[session_id],
-                    id=session_id,
+                    args=[normalized_for_job],
+                    id=normalized_for_job,
                     replace_existing=True,
                     misfire_grace_time=60,
                 )
