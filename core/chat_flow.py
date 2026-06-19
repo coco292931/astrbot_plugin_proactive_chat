@@ -137,20 +137,9 @@ class ProactiveCoreMixin:
             await self._save_data_internal()
 
         if scheduled_job_payload is not None:
-            # 统一用规范化 ID 作为 job id 与 args，并先清理同目标历史任务，
-            # 避免因 session_id 前缀漂移（如 default: 与 test:）产生无法被用户回复取消的幽灵任务。
-            self._purge_related_jobs(normalized_session_id)
-            self.scheduler.add_job(
-                self.check_and_chat,
-                "date",
-                run_date=scheduled_job_payload["run_date"],
-                args=[normalized_session_id],
-                id=normalized_session_id,
-                replace_existing=True,
-                misfire_grace_time=60,
-            )
+            self._add_chat_job(normalized_session_id, scheduled_job_payload["run_date"])
             logger.info(
-                f"[主动消息] 已为 {self._get_session_log_str(session_id, scheduled_job_payload['session_config'])} 安排下一次主动消息喵，时间：{scheduled_job_payload['run_date'].strftime('%Y-%m-%d %H:%M:%S')} 喵。"
+                f"[主动消息] 已为 {self._get_session_log_str(normalized_session_id, scheduled_job_payload['session_config'])} 安排下一次主动消息喵，时间：{scheduled_job_payload['run_date'].strftime('%Y-%m-%d %H:%M:%S')} 喵。"
             )
 
     async def check_and_chat(self, session_id: str) -> None:
