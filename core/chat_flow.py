@@ -137,20 +137,9 @@ class ProactiveCoreMixin:
             await self._save_data_internal()
 
         if scheduled_job_payload is not None:
-            # 统一用规范化 ID 作为 job id 与 args，并先清理同目标历史任务，
-            # 避免因 session_id 前缀漂移（如 default: 与 test:）产生无法被用户回复取消的幽灵任务。
-            self._purge_related_jobs(normalized_session_id)
-            self.scheduler.add_job(
-                self.check_and_chat,
-                "date",
-                run_date=scheduled_job_payload["run_date"],
-                args=[normalized_session_id],
-                id=normalized_session_id,
-                replace_existing=True,
-                misfire_grace_time=60,
-            )
+            self._add_chat_job(normalized_session_id, scheduled_job_payload["run_date"])
             logger.info(
-                f"[主动消息] 已为 {self._get_session_log_str(session_id, scheduled_job_payload['session_config'])} 安排下一次主动消息喵，时间：{scheduled_job_payload['run_date'].strftime('%Y-%m-%d %H:%M:%S')} 喵。"
+                f"[主动消息] 已为 {self._get_session_log_str(normalized_session_id, scheduled_job_payload['session_config'])} 安排下一次主动消息喵，时间：{scheduled_job_payload['run_date'].strftime('%Y-%m-%d %H:%M:%S')} 喵。"
             )
 
     async def check_and_chat(self, session_id: str) -> None:
@@ -185,20 +174,6 @@ class ProactiveCoreMixin:
 
             schedule_conf = session_config.get("schedule_settings", {})
 
-            # 二次校验：距上次用户消息若未满最小间隔，则跳过并重排。
-            # 兜底拦截任何因幽灵任务/调度器残留导致的提早触发，使 min_interval 始终生效。
-            # 暂时注释：先单独验证调度器关闭与 job id 统一两处修复是否生效，避免兜底逻辑掩盖问题。
-            # last_msg_time = self.last_message_times.get(normalized_session_id, 0)
-            # if last_msg_time > 0:
-            #     elapsed = time.time() - last_msg_time
-            #     min_interval_sec = int(schedule_conf.get("min_interval_minutes", 0)) * 60
-            #     if min_interval_sec > 0 and elapsed < min_interval_sec:
-            #         logger.info(
-            #             f"[主动消息] {self._get_session_log_str(normalized_session_id, session_config)} "
-            #             f"距上次用户消息仅 {elapsed:.0f} 秒，未满最小间隔 {min_interval_sec} 秒，跳过并重新调度喵。"
-            #         )
-            #         await self._schedule_next_chat_and_save(normalized_session_id)
-            #         return
 
             # 未回复次数上限检查
             async with self.data_lock:
