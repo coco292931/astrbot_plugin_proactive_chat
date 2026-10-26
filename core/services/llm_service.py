@@ -12,6 +12,7 @@ from astrbot.api import logger
 
 from ...utils.time_utils import format_current_time
 from ..adapters.astrbot_event import dispatch_event_hook
+from ..adapters.astrbot_main_agent import run_main_agent
 from ..adapters.astrbot_provider import build_provider_request, invoke_provider
 
 try:  # pragma: no cover - 取决于 AstrBot 版本
@@ -190,8 +191,26 @@ class LlmService:
             return None, final_user_simulation_prompt
 
         llm_response_obj = None
+        provider_mode = "provider_request"
         try:
-            llm_response_obj = await invoke_provider(provider, req)
+            agent_conf = session_config.get("agent_settings") or {}
+            if bool(agent_conf.get("enable")) and event is not None:
+                # 工具装配与多轮循环交给 AstrBot 主 Agent，失败时退回单次请求。
+                try:
+                    llm_response_obj = await run_main_agent(
+                        plugin, provider, event, req, session_id, session_config
+                    )
+                    provider_mode = "main_agent"
+                except Exception as agent_error:
+                    logger.warning(
+                        f"[主动消息] 主 Agent 调用失败，回退单次请求喵: {agent_error}"
+                    )
+                    llm_response_obj = None
+
+            if llm_response_obj is None:
+                provider_mode = "provider_request"
+                llm_response_obj = await invoke_provider(provider, req)
+
             logger.info("[主动消息] 调用 LLM 成功喵。")
             if plugin.telemetry and plugin.telemetry.enabled:
                 plugin._track_task(
@@ -199,7 +218,7 @@ class LlmService:
                         plugin.telemetry.track_feature(
                             "llm_generate_result",
                             {
-                                "provider_mode": "provider_request",
+                                "provider_mode": provider_mode,
                                 "success": True,
                                 "history_count": len(history_messages),
                                 "extra_part_count": len(req.extra_user_content_parts),
