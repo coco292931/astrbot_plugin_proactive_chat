@@ -1,3 +1,10 @@
+"""版本探测工具。
+
+由旧 utils/version.py 等价搬迁而来，仅更名以符合命名规范。
+"""
+
+from __future__ import annotations
+
 import re
 from dataclasses import dataclass
 from importlib import metadata as importlib_metadata
@@ -25,7 +32,7 @@ class AstrBotVersionInfo:
 
 
 def get_plugin_root() -> Path:
-    """获取插件根目录。"""
+    """获取插件根目录（version_utils 位于 utils/ 下，故上溯两级）。"""
     return Path(__file__).resolve().parent.parent
 
 
@@ -58,12 +65,12 @@ def get_plugin_version(default: str = "unknown", strip_v_prefix: bool = False) -
 def _build_unknown_version_info(
     default: str = "unknown", error: str = "all_methods_failed"
 ) -> AstrBotVersionInfo:
-    """构造未知版本结果。"""
+    """构造“探测失败”的统一版本信息。"""
     return AstrBotVersionInfo(version=default, source="unknown", error=error)
 
 
 def _get_astrbot_version_from_core_config() -> AstrBotVersionInfo | None:
-    """优先从 AstrBot 运行时核心配置模块读取版本。"""
+    """从 astrbot.core.config 模块的 VERSION 常量读取版本。"""
     module_candidates = (
         "astrbot.core.config",
         "astrbot.core.config.default",
@@ -86,7 +93,7 @@ def _get_astrbot_version_from_core_config() -> AstrBotVersionInfo | None:
 
 
 def _get_astrbot_version_from_distribution() -> AstrBotVersionInfo | None:
-    """从安装分发元数据读取 AstrBot 版本。"""
+    """从导入包的分发元数据读取版本。"""
     for dist_name in ("AstrBot", "astrbot"):
         try:
             version = str(importlib_metadata.version(dist_name)).strip()
@@ -108,7 +115,7 @@ def _get_astrbot_version_from_distribution() -> AstrBotVersionInfo | None:
 
 
 def _get_astrbot_version_from_cli_module() -> AstrBotVersionInfo | None:
-    """从 AstrBot CLI 模块常量读取版本。"""
+    """从 astrbot.cli.__version__ 读取版本。"""
     try:
         from astrbot.cli import __version__ as cli_version
 
@@ -123,7 +130,7 @@ def _get_astrbot_version_from_cli_module() -> AstrBotVersionInfo | None:
 
 
 def _get_astrbot_version_from_pyproject(default: str = "unknown") -> AstrBotVersionInfo:
-    """从 AstrBot 安装目录附近的 pyproject.toml 中兜底读取版本。"""
+    """从 AstrBot 包目录旁的 pyproject.toml 读取版本（最后兜底方案）。"""
     try:
         astrbot_path = Path(astrbot.__file__).resolve().parent.parent
         pyproject_path = astrbot_path / "pyproject.toml"
@@ -163,7 +170,10 @@ def _get_astrbot_version_from_pyproject(default: str = "unknown") -> AstrBotVers
 
 
 def get_astrbot_version_info(default: str = "unknown") -> AstrBotVersionInfo:
-    """获取带来源与错误码的 AstrBot 版本探测结果。"""
+    """获取带来源与错误码的 AstrBot 版本探测结果。
+
+    依次尝试多种探测方式，全部失败时回退到 pyproject 再返回 unknown。
+    """
     for resolver in (
         _get_astrbot_version_from_core_config,
         _get_astrbot_version_from_distribution,
@@ -177,5 +187,5 @@ def get_astrbot_version_info(default: str = "unknown") -> AstrBotVersionInfo:
 
 
 def get_astrbot_version(default: str = "unknown") -> str:
-    """获取 AstrBot 版本号字符串。"""
+    """获取 AstrBot 版本号字符串（忽略来源与错误信息）。"""
     return get_astrbot_version_info(default).version

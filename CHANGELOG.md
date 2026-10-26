@@ -1,9 +1,77 @@
 <!-- markdownlint-disable MD024 -->
 <!-- markdownlint-disable MD025 -->
+<!-- markdownlint-disable MD028 -->
 <!-- markdownlint-disable MD033 -->
 <!-- markdownlint-disable MD034 -->
 <!-- markdownlint-disable MD041 -->
 # ChangeLog
+
+# 2026/09/28 v1.2.6
+
+该版本预计将作为主动消息插件大更新之前的最后一个稳定版本。1.3 版本中我们将进行一轮大重构，便于后续新功能的开发与添加。
+
+## 🚀 What's Changed
+
+### ✨ New Features (新功能)
+
+- 现在注入给模型的时间信息中会包含星期几的信息 by @DBJD-CR in #107
+- 现在会校验主动消息生成结果是否真正落盘而不是静默失败 by @DBJD-CR in #107
+
+### ♻️ Refactor (重构)
+
+- 重构主动消息构建与发送流程，增强缓存命中、钩子应用、智能分段、字段补全、提示词增强、落盘校验等功能 by @DBJD-CR in #107
+
+### 🐛 Bug Fixes (修复)
+
+- 修复了重载插件时有概率导致 AstrBot 停止运行或配置保存失败的问题 by @Ayleovelle & @DBJD-CR in #77
+- 修复部分情况下因为主动消息调度、定时器取消和消息状态记录不一致导致的误触发或任务残留 by @coco292931 & @DBJD-CR in #86
+- 修复了打包工作流导致的 WebUI 白屏问题 by @DBJD-CR in #104
+- 修复了平台适配器尚未加载或运行时错误规范化合理 UMO 的问题 by @DBJD-CR in #106
+- 修复部分场景下装饰钩子对主动消息不生效的问题 by @DBJD-CR in #107
+- 优化了上下文来源为 `平台完整聊天流水` 时可能导致破坏提示缓存的问题 by @DBJD-CR in #107
+- 优化了插件的分段逻辑 by @DBJD-CR in #107
+
+### 📚 Documentation (文档)
+
+- 更新适用于 v1.2.6 的 README 文档、贡献指南和更新日志 by @DBJD-CR in #108
+
+### 🔧 Chore (杂项)
+
+- 代码格式与质量检查工作流使用的 ruff 版本固定为 0.14.2 by @DBJD-CR in #104
+- 更新插件要求的最低 AstrBot 版本为 `4.24.0` by @DBJD-CR in #108
+
+---
+
+## ❤️ New Contributors
+
+- @coco292931 made their first contribution in #86
+
+**Full Changelog**: https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/compare/v1.2.5...v1.2.6
+
+<details>
+<summary>点击查看历史更新记录 (History)</summary>
+
+# 2026/08/30 v1.2.5
+
+Hi，好久不见。我想说的是我们还没有跑路 :)
+
+本版本中主要更新并迁移了通知与遥测的端点（大概可以解决控制台一直刷警告信息的问题）并简单修订和完善了文档。
+
+我们预计在九月中下旬将带来一波大的新功能和改进，敬请期待！
+
+## 🚀 What's Changed
+
+### 🌐 Data Sources & Network (数据源与网络)
+
+- 迁移遥测与通知中心至新域名 by @DBJD-CR & Aloys233 in #98
+
+### 📚 Documentation (文档)
+
+- 更新适用于 v1.2.5 的 README 文档、贡献指南和更新日志 by @DBJD-CR in #98
+
+---
+
+**Full Changelog**: https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/compare/v1.2.4...v1.2.5
 
 # 2026/05/29 v1.2.4
 
@@ -34,10 +102,9 @@
 
 - @Ayleovelle made their first contribution in #71
 
-**Full Changelog**: https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/compare/v1.2.3...v1.2.4
+**Full Changelog**: https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/compare/v1.2.3...v1.2.4
 
-<details>
-<summary>点击查看历史更新记录 (History)</summary>
+---
 
 # 2026/05/06 v1.2.3
 
@@ -77,7 +144,7 @@
 
 - @Sisyphbaous-DT-Project made their first contribution in #59
 
-**Full Changelog**: https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/compare/v1.2.2...v1.2.3
+**Full Changelog**: https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/compare/v1.2.2...v1.2.3
 
 ---
 
@@ -92,7 +159,7 @@
 
 ---
 
-**Full Changelog**: https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/compare/v1.2.1...v1.2.2
+**Full Changelog**: https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/compare/v1.2.1...v1.2.2
 
 ---
 
@@ -119,7 +186,7 @@
 
 ---
 
-**Full Changelog**: https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/compare/v1.2.0...v1.2.1
+**Full Changelog**: https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/compare/v1.2.0...v1.2.1
 
 ---
 
@@ -198,7 +265,7 @@
 - @codex made their first contribution in #43
 - @Alaye-Dong made their first contribution in #47
 
-**Full Changelog**: https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/compare/v1.1.5...v1.2.0
+**Full Changelog**: https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/compare/v1.1.5...v1.2.0
 
 ---
 
@@ -227,7 +294,7 @@
 - 修订 README 文档与更新日志
 - Issue/PR 模板微调
 
-**Full Changelog**: https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/compare/v1.1.4...v1.1.5
+**Full Changelog**: https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/compare/v1.1.4...v1.1.5
 
 # 2026/01/22 v1.1.4
 
@@ -243,7 +310,7 @@
 > [!TIP]
 > 如果遇到你期望之外的 Bot 给你发送主动消息，并且插件无法自行更正，请尝试删除插件生成的持久化数据（不影响你在插件中的配置项），然后和你想要发送主动消息的那个 Bot 重新聊一下。
 
-**Full Changelog**: https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/compare/v1.1.3...v1.1.4
+**Full Changelog**: https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/compare/v1.1.3...v1.1.4
 
 ---
 
@@ -267,7 +334,7 @@
 
 - @dosu-ai made their first contribution in #19
 
-**Full Changelog**: https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/compare/v1.1.2...v1.1.3
+**Full Changelog**: https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/compare/v1.1.2...v1.1.3
 
 ---
 
@@ -293,7 +360,7 @@
 - @NickWoluff made their first contribution in #16
 - @sourcery-ai made their first contribution in #17
 
-**Full Changelog**: https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/compare/v1.1.0...v1.1.2
+**Full Changelog**: https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/compare/v1.1.0...v1.1.2
 
 ---
 
@@ -311,7 +378,7 @@
 
 ---
 
-**Full Changelog**: https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/compare/v1.0.2...v1.1.0
+**Full Changelog**: https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/compare/v1.0.2...v1.1.0
 
 ---
 
@@ -330,7 +397,7 @@
 
 ---
 
-**Full Changelog**: https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/compare/v1.0.1...v1.0.2
+**Full Changelog**: https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/compare/v1.0.1...v1.0.2
 
 ---
 
@@ -350,7 +417,7 @@
 
 - **增强异常处理**: 优化了内部任务调度逻辑的异常捕获机制，提升了插件在边缘情况下的健壮性
 
-**Full Changelog**: https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/compare/v1.0.0...v1.0.1
+**Full Changelog**: https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/compare/v1.0.0...v1.0.1
 
 ---
 
@@ -381,7 +448,7 @@
 
 保持警觉，不放过未来任何新版本更新的相关资讯！
 
-**Full Changelog**: https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/compare/v0.9.97...v1.0.0
+**Full Changelog**: https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/compare/v0.9.97...v1.0.0
 
 ---
 

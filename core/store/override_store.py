@@ -1,4 +1,7 @@
-"""会话差异配置管理器。"""
+"""会话差异配置存储。
+
+由旧 core/session_override_manager.py 等价搬迁而来。
+"""
 
 from __future__ import annotations
 
@@ -11,7 +14,7 @@ from typing import Any
 from astrbot.api import logger
 
 
-class SessionOverrideManager:
+class OverrideStore:
     """负责会话级差异配置的加载、存储与合并。"""
 
     OVERRIDES_FILE = "session_overrides.json"
@@ -38,9 +41,11 @@ class SessionOverrideManager:
         self._load()
 
     def _ensure_storage_dir(self) -> None:
+        """确保存储目录存在。"""
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
     def _load(self) -> None:
+        """同步加载差异配置文件；文件缺失或损坏时回退为空配置。"""
         self._ensure_storage_dir()
 
         if not self.overrides_file.exists():
@@ -62,10 +67,8 @@ class SessionOverrideManager:
 
     async def _save(self) -> None:
         """异步保存会话差异配置到磁盘，避免阻塞事件循环。"""
-
         self._ensure_storage_dir()
         temp_file = self.overrides_file.with_suffix(self.overrides_file.suffix + ".tmp")
-        # 由于这里是在类内多次修改同一份字典，安全起见先做一次深拷贝防止序列化期间被并发修改
         snap_overrides = copy.deepcopy(self._overrides)
 
         def _do_write():
@@ -84,14 +87,17 @@ class SessionOverrideManager:
                 pass
 
     def list_sessions(self) -> list[str]:
+        """返回所有存在差异配置的会话标识（已排序）。"""
         return sorted(self._overrides.keys())
 
     def get_override(self, session_id: str) -> dict[str, Any]:
+        """读取会话差异配置（返回深拷贝，调用方修改不影响内部状态）。"""
         return copy.deepcopy(self._overrides.get(session_id, {}))
 
     async def set_override(
         self, session_id: str, override_patch: dict[str, Any]
     ) -> None:
+        """设置会话差异配置；清理后为空则等同于删除该会话配置。"""
         if not isinstance(override_patch, dict):
             raise ValueError("override_patch 必须是对象")
 
@@ -105,6 +111,7 @@ class SessionOverrideManager:
             await self._save()
 
     async def delete_override(self, session_id: str) -> None:
+        """删除指定会话的差异配置。"""
         async with self._lock:
             self._overrides.pop(session_id, None)
             await self._save()
@@ -112,6 +119,7 @@ class SessionOverrideManager:
     def get_effective(
         self, session_id: str, base_config: dict[str, Any] | None
     ) -> dict[str, Any]:
+        """把全局基础配置与会话差异配置深合并，得到最终生效配置。"""
         base = copy.deepcopy(base_config or {})
         override = self._overrides.get(session_id, {})
         return self.deep_merge(base, override)
@@ -122,6 +130,7 @@ class SessionOverrideManager:
         base_config: dict[str, Any],
         effective_config: dict[str, Any],
     ) -> None:
+        """由前端提交的最终生效配置反推差异配置并保存。"""
         if not isinstance(effective_config, dict):
             raise ValueError("effective_config 必须是对象")
 
@@ -136,6 +145,7 @@ class SessionOverrideManager:
 
     @classmethod
     def deep_merge(cls, base: Any, patch: Any) -> Any:
+        """递归合并两个结构；非字典值以 patch 覆盖 base。"""
         if isinstance(base, dict) and isinstance(patch, dict):
             merged = copy.deepcopy(base)
             for key, value in patch.items():
@@ -149,6 +159,7 @@ class SessionOverrideManager:
 
     @classmethod
     def compute_diff(cls, default_obj: Any, target_obj: Any) -> Any:
+        """计算 target 相对 default 的差异；无差异时返回 None。"""
         if isinstance(default_obj, dict) and isinstance(target_obj, dict):
             result: dict[str, Any] = {}
             for key, value in target_obj.items():
@@ -168,6 +179,7 @@ class SessionOverrideManager:
         return None
 
     def _sanitize_patch(self, patch: Any, depth: int = 0) -> Any:
+        """清洗差异补丁：仅保留白名单根字段并剔除空子树。"""
         if patch is None:
             return None
 

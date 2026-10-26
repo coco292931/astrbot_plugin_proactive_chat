@@ -3,7 +3,7 @@
 <!-- markdownlint-disable MD033 -->
 <!-- markdownlint-disable MD041 -->
 
-![astrbot_plugin_proactive_chat](https://socialify.git.ci/DBJD-CR/astrbot_plugin_proactive_chat/image?custom_description=%F0%9F%92%96+%E8%AE%A9%E4%BD%A0%E7%9A%84+Bot+%E6%8B%A5%E6%9C%89%E4%B8%BB%E5%8A%A8%E5%85%B3%E6%80%80%E7%9A%84%E7%81%B5%E9%AD%82&description=1&font=Inter&forks=1&issues=1&language=1&name=1&owner=1&pattern=Formal+Invitation&pulls=1&stargazers=1&theme=Auto)
+![astrbot_plugin_proactive_chat](https://socialify.git.ci/Pancakes-Labs/astrbot_plugin_proactive_chat/image?custom_description=%F0%9F%92%96+%E8%AE%A9%E4%BD%A0%E7%9A%84+Bot+%E6%8B%A5%E6%9C%89%E4%B8%BB%E5%8A%A8%E5%85%B3%E6%80%80%E7%9A%84%E7%81%B5%E9%AD%82&description=1&font=Inter&forks=1&issues=1&language=1&name=1&owner=1&pattern=Formal+Invitation&pulls=1&stargazers=1&theme=Auto)
 
 <div align="center">
 
@@ -20,12 +20,12 @@
 <p align="center">
   <img src="https://img.shields.io/badge/License-AGPL_3.0-blue.svg" alt="License: AGPL-3.0">
   <img src="https://img.shields.io/badge/Python-3.10+-blue.svg" alt="Python 3.10+">
-  <img src="https://img.shields.io/badge/AstrBot-v4.8.0+-orange.svg" alt="AstrBot v4.8.0+">
+  <img src="https://img.shields.io/badge/AstrBot-v4.24.0+-orange.svg" alt="AstrBot v4.24.0+">
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/AstrBot-v4.23.6%20Compatible-brightgreen.svg" alt="Compatible with AstrBot v4.23.6">
-  <img src="https://img.shields.io/github/v/release/DBJD-CR/astrbot_plugin_proactive_chat?label=Release&color=brightgreen" alt="Latest Release">
+  <img src="https://img.shields.io/badge/AstrBot-v4.27.4%20Compatible-brightgreen.svg" alt="Compatible with AstrBot v4.27.4">
+  <img src="https://img.shields.io/github/v/release/Pancakes-Labs/astrbot_plugin_proactive_chat?label=Release&color=brightgreen" alt="Latest Release">
   <img src="https://img.shields.io/badge/QQ群-1033089808-12B7F3.svg" alt="QQ群">
 </p>
 
@@ -128,19 +128,11 @@
 > [!TIP]
 > 本项目的相关开发数据 (持续更新中)：
 >
-> 开发时长：累计 63 天（主插件部分）
+> 开发时长：累计 70 天（主插件部分）
 >
-> 累计工时：约 310 小时（主插件部分）
+> 累计工时：约 327 小时（主插件部分）
 >
-> 使用的大模型：Gemini-2.5-Pro、Kimi For Coding、Gemini-3.0 Flash/Pro、GPT-5.3 & 5.4-Codex & 5.5 (With RooCode in VSCode)
->
-> 用于测试对话的大模型：DeepSeek-V3.2-Exp & V3.2、Gemini-3.0-Flash
->
-> 插件 Logo 绘制: Doubao-Seedream-3.0-t2i
->
-> 对话窗口搭建：Chatbox 1.13.2、VSCode
->
-> Tokens Used：701,593,428
+> Tokens Used：731,817,728
 
 ## 🌟 功能特色
 
@@ -166,7 +158,7 @@
 
 ## 🚀 安装与使用
 
-1. **下载插件**: 通过 AstrBot 的插件市场下载。或从本 GitHub 仓库的 Release 下载 `astrbot_plugin_proactive_chat` 的 `.zip` 文件，在 AstrBot WebUI 中的插件页面中选择 `从文件安装` 。
+1. **下载插件**: 通过 AstrBot 的插件市场下载。或从本 GitHub 仓库的 Release 下载 `astrbot_plugin_proactive_chat` 的 `.zip` 文件，在 AstrBot WebUI 中的插件页面右下角的 `➕` 选择 `从文件安装` 。
 2. **安装依赖**: 本插件的核心依赖大多已包含在 AstrBot 的默认依赖中，且在插件下载安装时会自动安装插件所需的依赖，通常无需额外安装。如果你的环境中确实缺少相关依赖，请安装：
 
     ```bash
@@ -176,8 +168,49 @@
     ```
 
 3. **重启 AstrBot (可选)**: 如果插件没有正常加载或生效，可以尝试重启你的 AstrBot 程序。
-4. **配置插件**: 进入 WebUI，找到 `主动消息` 插件，选择 `插件配置` 选项，填写会话 UMO 列表和其他个性化配置。
+4. **配置插件**: 进入 AstrBot WebUI，找到 `主动消息` 插件，选择 `插件配置` 选项，填写 `会话 UMO 列表` 和其他个性化配置。或者在插件自带的 WebUI 中进行配置。
 5. **开始使用**: 保存配置后，等待 Bot 主动带给你的惊喜吧~
+
+### 📬 推送会话列表
+
+现在，距离 bot 开始发消息还有最后一步：正确填写需要推送的会话格式。如果你遇到了配置问题，请根据下方的流程指引完成：
+
+1. 找到你需要发送主动消息的会话，@ 你的 bot（如果是私聊就直接发），发送一条 `/sid` 的指令（如果你修改了 AstrBot 的配置文件 → 平台配置 → 唤醒词，请把 `/` 改为你自定义的唤醒词）。
+2. 等待 bot 回复后，将给出的 UMO 填入插件对应配置项。回复格式类似于：
+
+```text
+UMO: 「default:GroupMessage:123456789」
+UID: 「987654321」
+*Use UMO to set whitelist and configure routing, use UID to set admin list(UMO 可用于设置白名单和配置文件路由，UID 可用于设置管理员列表)
+
+Your session information:
+Bot ID: 「default」
+Message Type: 「GroupMessage」
+Session ID: 「123456789」
+```
+
+> [!WARNING]
+> 请注意，你应该填写的部分是 `「」` 内的内容，即 `default:GroupMessage:123456789`，请不要把整串回复内容填进去然后来问我为什么不发消息了。
+>
+> 更不要照抄这里的示例或者是配置描述，一切情况以你自己实际为准。
+
+如果是 QQ 官方机器人，类似于：
+
+```text
+UMO: 「default:GroupMessage:4C011A2B3D4C5E6F9F8E7D6C5B4A3210」
+UID: 「4C011A2B3D4C5E6F9F8E7D6C5B4A3210」
+*Use UMO to set whitelist and configure routing, use UID to set admin list(UMO 可用于设置白名单和配置文件路由，UID 可用于设置管理员列表)
+Your session information:
+Bot ID: 「default」
+Message Type: 「GroupMessage」
+Session ID: 「4C011A2B3D4C5E6F9F8E7D6C5B4A3210」
+The group's ID: 「7E933A67F5C0AD0A128A199EFCE140B4」. Set this ID to whitelist to allow the entire group.
+```
+
+- 私聊推送请填 UMO 的部分，即 `default:FriendMessage:4C011A2B3D4C5E6F9F8E7D6C5B4A3210`。
+- 群聊推送请用 `The group's ID` 替换掉 `UID` 的部分，即填写 `default:GroupMessage:7E933A67F5C0AD0A128A199EFCE140B4`。
+
+其他平台配置流程基本类似。完成后重载插件即可开始发送主动消息。
 
 ## 💻 现代化 WebUI 控制台
 
@@ -218,7 +251,7 @@
 | 个人微信 | ❓ | v4.22.0+ | 未提供准确说明 | ❓ 等待社区反馈 (但根据过往经验或许可用) |
 | 飞书 | ✅ | v4.15.0+ | 主动消息推送：支持 | ✅ 社区反馈可用 |
 | 钉钉 | ✅ | v4.15.0+ | 主动消息推送：支持 | ❓ 等待社区反馈 |
-| Telegram | ✅ | v4.15.0+ | 主动消息推送：支持 | ❓ 等待社区反馈 |
+| Telegram | ✅ | v4.15.0+ | 主动消息推送：支持 | ✅ 社区反馈可用 |
 | LINE | ✅ | v4.17.0+ | 主动消息推送：支持 | ❓ 等待社区反馈 |
 | Slack | ❓ | v4.8.0+ | 未提供说明 | ❓ 等待社区反馈 |
 | Misskey | ❓ | v4.8.0+ | 未提供说明 | ❓ 等待社区反馈 |
@@ -231,7 +264,6 @@
 | 其他平台 | ❓ | v4.8.0+ | - | ❓ 理论上支持所有支持主动消息推送的平台，但未经测试 |
 
 > [!NOTE]
->
 > 使用 QQ 官机时，注意不要像个人号那样填写 QQ 号，应填写 UID，可使用指令 `/sid` 获取，格式类似 `4C011A2B3D4C5E6F9F8E7D6C5B4A3210`。
 >
 > 使用个人微信需要升级到最新的手机微信版本：iOS >= 8.0.70，Android >= 8.0.69，并确保微信中包含 ClawBot 插件。
@@ -789,40 +821,25 @@ PS: 由于我个人本地的测试环境有限，我们非常欢迎分享你在�
 
 ### ♨️ 配置热重载与使用建议
 
-本插件在保存配置后，**会立即写入当前运行中的配置对象**，因此很多配置项都能在后续流程中直接读取到新值；但需要注意的是，**这并不等于所有运行态资源都会被立刻重建**。
+保存配置后，插件会**立即更新运行中的配置对象**，但**这不代表所有运行态资源都会同步重建**：配置值与前端界面会热更新，而已存在的定时任务、群沉默计时器、Web 服务监听参数不会因保存而自动重建。
 
-换句话说，你可以把当前的行为理解为：
+按生效方式，配置可分为三类：
 
-- **配置本身会热更新**；
-- **前端界面会实时刷新**；
-- **但已经存在的定时任务、群沉默计时器、Web 服务监听参数等，不会因为点击保存就自动全部重建**。
+#### 1. 保存后通常可直接生效
 
-为了更容易理解，建议把配置项分成以下三类来看：
+后续流程会动态读取，**无需重载插件**，下次触发即用新值。
 
-#### 1. 保存后通常可直接生效的配置
-
-这类配置的特点是：后续业务流程会动态读取，因此**不需要重载插件**，通常就能在下一次触发时使用新值。
-
-常见示例：
-
-- 私聊 / 群聊的主动消息提示词 `proactive_prompt`
+- 主动消息提示词 `proactive_prompt`
 - TTS 相关配置 `tts_settings`
 - 分段回复相关配置 `segmented_reply_settings`
 - 会话差异配置中对应的覆写项
-- 已启用密码鉴权时，新登录请求使用的 `web_admin.password`
+- 已启用鉴权时，新登录请求使用的 `web_admin.password`
 
-这类配置更适合频繁微调，例如：
+这类配置适合频繁微调，例如调整语气、是否附带原文、分段规则，或给单个会话加个性化 Prompt。
 
-- 优化 Prompt 语气
-- 调整 TTS 是否附带原文
-- 修改分段规则、分段词或发送节奏
-- 单独给某个会话增加个性化 Prompt
+#### 2. 保存后只会“部分热重载”
 
-#### 2. 保存后只会“部分热重载”的配置
-
-这类配置保存后，**会影响之后新创建的流程**，但**不会自动重建当前已经存在的任务或计时器**。
-
-常见示例：
+保存后**影响之后新建的流程**，但**不会重建已存在的任务或计时器**。
 
 - 私聊 / 群聊总开关 `enable`
 - 会话列表 `session_list`
@@ -830,39 +847,26 @@ PS: 由于我个人本地的测试环境有限，我们非常欢迎分享你在�
 - 调度区间 `schedule_settings`
 - 群聊沉默时间 `group_idle_trigger_minutes`
 
-对于它们，可以这样理解：
+也就是说，**后续新建任务**按新配置执行，而**已挂载的主动消息任务**与**已存在的群沉默 / 自动触发计时器**不会立即重排。改完发现效果没有马上变化，通常不是 Bug，而是旧运行态仍在生效。
 
-- **后续新建的任务**会按新配置执行；
-- **当前已经挂着的 APScheduler 任务**不会立即重排；
-- **当前已经存在的群沉默计时器 / 自动触发计时器**也不会立刻按新值重建。
+#### 3. 保存后仍建议重载插件
 
-因此，如果你刚刚修改了这类配置，却发现“效果没有立刻完全变化”，这通常不是 Bug，而是因为旧运行态还在继续消化。
+这类配置偏向“服务启动参数”，一般只在插件初始化或 Web 服务启动时读取一次。
 
-#### 3. 保存后通常仍建议重载插件的配置
+- Web 管理端是否启用、监听地址、监听端口
 
-这类配置更偏向“服务启动参数”，往往只会在插件初始化或 Web 服务启动时读取一次。
-
-常见示例：
-
-- Web 管理端是否启用 `web_admin.enabled`
-- Web 监听地址 `web_admin.host`
-- Web 监听端口 `web_admin.port`
-- Web 鉴权是否开启这一“模式”本身
-
-这些配置即使保存成功，也**不一定会立刻改变当前已经启动的 Web 服务行为**。如果你修改了这些参数，最稳妥的做法仍然是：**保存后重载插件**。
+即使保存成功，也**不一定立刻改变已启动的 Web 服务行为**，最稳妥的做法仍是**保存后重载插件**。
 
 #### ✅ 推荐使用姿势
 
-为了更顺手地使用这套配置，建议注意以下几点：
+1. **先加会话，再开功能**：只有明确加入会话列表的会话才会获得主动消息服务。
+2. **私聊与群聊分别调参**：默认节奏不同，不建议简单照搬。
+3. **Prompt 比参数更重要**：调度配置决定“什么时候说”，提示词决定“说得像不像真人”。
+4. **改 Prompt / TTS / 分段规则可放心边改边试**：通常较快体现在后续回复中。
+5. **改调度、自动触发、会话列表时区分“新流程”与“旧任务”**：想让所有会话立刻按新规则运行，重载插件更干净。
+6. **改 Web 监听地址、端口、鉴权模式后直接重载插件**：启动参数不适合依赖即时热更新。
 
-1. **先加会话，再开功能**：无论私聊还是群聊，只有在会话列表中明确加入的会话，插件才会提供主动消息服务。
-2. **私聊和群聊分别调参**：两者的默认节奏不同，私聊偏亲密连续，群聊偏克制保守，不建议简单照搬。
-3. **Prompt 比参数更重要**：调度配置决定“什么时候说”，而提示词决定“说得像不像真人”。
-4. **改 Prompt / TTS / 分段规则时，可以放心边改边试**：这类配置通常能较快体现在后续回复效果中。
-5. **改调度、自动触发、会话列表时，要区分“新流程”和“旧任务”**：如果想让所有会话立刻完全按新规则运行，重载插件会更干净。
-6. **改 Web 监听地址、端口、鉴权模式后，建议直接重载插件**：这类启动参数不适合依赖保存后的即时热更新。
-
-如果你只是在优化内容表现，通常无需重载；如果你是在调整运行机制或 Web 服务参数，那么**保存配置 + 重载插件**会是更稳妥的操作习惯。
+总的来说，优化内容表现通常无需重载；调整运行机制或 Web 服务参数时，**保存配置 + 重载插件**更稳妥。
 
 </details>
 
@@ -873,8 +877,8 @@ PS: 由于我个人本地的测试环境有限，我们非常欢迎分享你在�
 从 v1.2.0 版本开始，插件已经重构为 **前端控制台 + 模块化后端核心** 的结构；在后续迭代中，又继续加入了 **通知系统、遥测系统** 与更完善的文档组织：
 
 - **前端 (`admin/`)**：提供独立 Web 管理端，负责运行状态展示、任务管理、通知中心、文档浏览、配置编辑与实时同步。
-- **后端核心 (`core/`)**：拆分为多个职责明确的模块，分别处理会话配置、调度、消息发送、上下文构建、持久化、通知同步、遥测与 Web 管理服务。
-- **工具模块 (`utils/`)**：放置跨模块复用的通用工具，例如时间处理与版本读取。
+- **后端核心 (`core/`)**：全部后端子包统一收纳在 `core/` 之下，并按职责划分为 `adapters`（框架适配）、`console`（Web 控制台）、`domain`（领域模型）、`features`（功能装配）、`pipeline`（流水线）、`remote`（遥测与通知）、`services`（服务）与 `store`（持久化）。
+- **工具模块 (`utils/`)**：位于根目录，放置跨模块复用的通用工具，例如时间处理与版本读取。
 - **根目录**：保留插件入口、配置结构、依赖声明与项目说明文档等关键文件。
 
 当前目录结构示例：
@@ -946,21 +950,20 @@ AstrBot/
          │  ├─ StarRank.svg
          │  └─ ShitMountain.svg
          │
-         ├─ core/                             # 模块化后端核心实现
+         ├─ core/                             # 模块化后端核心实现（全部后端子包统一收纳于此）
          │  ├─ __init__.py
-         │  ├─ chat_flow.py                   # 主动消息执行流与主任务编排
-         │  ├─ data_storage.py                # 会话数据读写、合并与清理
-         │  ├─ llm_adapter.py                 # 上下文准备与 LLM 调用适配层
-         │  ├─ message_events.py              # AstrBot 消息事件接入与监听逻辑
-         │  ├─ message_sender.py              # 文本 / TTS / 分段消息发送
-         │  ├─ notification_center.py         # 远端通知拉取、本地缓存与已读状态维护
-         │  ├─ plugin_lifecycle.py            # 插件初始化、恢复与生命周期管理
-         │  ├─ session_config.py              # 会话配置解析与生效逻辑
-         │  ├─ session_override_manager.py    # 会话差异配置管理
-         │  ├─ session_parser.py              # 会话 ID 解析与规范化
-         │  ├─ task_scheduler.py              # 定时任务与触发调度逻辑
-         │  ├─ telemetry_manager.py           # 匿名遥测上报、配置快照过滤与错误脱敏
-         │  └─ web_admin_server.py            # Web 管理端服务与通知接口桥接
+         │  ├─ adapters/                      # 框架适配层：事件接入、平台解析、对话与 Provider 适配
+         │  ├─ console/                       # Web 控制台：服务器、路由、状态构建与实时推送
+         │  ├─ domain/                        # 领域层：值对象与数据模型（不依赖框架）
+         │  ├─ features/                      # 功能装配：默认功能与可插拔扩展点
+         │  │  ├─ context/                    # 上下文来源功能
+         │  │  ├─ deliver/                    # 消息发送功能
+         │  │  ├─ prompt/                     # 提示词功能
+         │  │  └─ record/                     # 存档与重调度功能
+         │  ├─ pipeline/                      # 流水线引擎：Stage 协议、钩子注册表与执行器
+         │  ├─ remote/                        # 远端服务：遥测管理器与通知中心
+         │  ├─ services/                      # 服务层：会话、配置、调度、发送、上下文与 LLM
+         │  └─ store/                         # 本地持久化：会话数据与差异配置存储
          │
          ├─ docs/                             # 补充文档目录
          │  └─ notification-api-spec.md       # 通知接口与开发规范文档
@@ -968,7 +971,7 @@ AstrBot/
          └─ utils/
             ├─ __init__.py
             ├─ time_utils.py                  # 通用时间工具函数
-            └─ version.py                     # 插件版本 / AstrBot 版本统一读取工具
+            └─ version_utils.py               # 插件版本 / AstrBot 版本统一读取工具
 ```
 
 插件会在 `AstrBot/data/plugin_data/astrbot_plugin_proactive_chat/` 下创建自己的数据文件夹，用于保存运行时状态与缓存文件。
@@ -1515,6 +1518,7 @@ flowchart LR
 
 | 版本 | 状态 | 基本说明 | 推荐 AstrBot 版本 |
 | :--- | :--- | :--- | :--- |
+| **v1.2.6** | ✅ 稳定版本 | 包含大量修复的稳定版本 | v4.24.0+ |
 | **v1.2.0** | ⚠️ 大重构版本 | 引入 WebUI，重构会话 ID 格式 | v4.22.1+ |
 | **v1.1.5** | ✅ 稳定版本 | 新增配置备份功能，为重构做准备 | v4.10.2+ |
 | **v1.1.2** | ✅ 架构升级 | 新增装饰钩子支持，提升与其他插件的兼容性 | v4.10.2+ |
@@ -1524,13 +1528,14 @@ flowchart LR
 | **v0.9.97** | ✅ 稳定版本 | 单私聊版最后一个稳定版本 | v4.5.2+ |
 | **v0.9.7** | ⚠️ 首个发行版 | 存在较多基础性问题，不推荐下载 | v3.5.19+ |
 
-更多历史版本说明详见更新日志 [CHANGELOG](https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/blob/main/CHANGELOG.md)。
+更多历史版本说明详见更新日志 [CHANGELOG](https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/blob/main/CHANGELOG.md)。
 
 ---
 
 ## ❓ 常见问题简答
 
-**Q: 配置完成后 Bot 不主动发消息？**
+<details>
+<summary>Q: 配置完成后 Bot 不主动发消息？</summary>
 
 >**A**: 请检查以下几点：
 >
@@ -1539,7 +1544,10 @@ flowchart LR
 > 3. 确认当前时间不在免打扰时段内。
 > 4. 查看日志是否有错误信息。
 
-**Q: 自动主动消息功能没有触发？**
+</details>
+
+<details>
+<summary>Q: 自动主动消息功能没有触发？</summary>
 
 >**A**: 自动触发需要满足以下条件：
 >
@@ -1548,14 +1556,41 @@ flowchart LR
 > 3. 会话配置已启用且有效。
 > 4. 收到任何消息后，自动触发会被取消（这是正常行为）。
 
-**Q: 不支持我使用的平台怎么办？**
+</details>
+
+<details>
+<summary>为什么我的 Bot 不发消息？ / 什么是自动主动消息？</summary>
+
+> **A**: 先别着急，这里其实藏着一个特别容易被误解的设计喵。简单说：**「自动主动消息」本身并不代表 Bot 什么时候开口，它只是插件用来「补建任务」的一个启动检测。**
+>
+> 让我们把三个时间配置分清楚：
+>
+> 1. **自动触发等待时间（`auto_trigger_after_minutes`）** —— 它不是发消息的时间！它的真正含义是：插件启动后的这段时间里，如果这个会话「一条消息都没收到过」，插件才会帮它补建一个待执行的主动消息任务。
+> 2. **最小 / 最大触发间隔（`min_interval_minutes` / `max_interval_minutes`）** —— 这才是决定「任务建好之后，究竟隔多久真正发出去」的配置。插件会在这个区间里随机挑一个时间点发送，调小这两个值，消息才会来得更勤。
+> 3. **群聊沉默触发时间（`group_idle_trigger_minutes`）** —— 群聊专属，作用于「群里已经有过消息」之后的常规流程：群聊安静满这个时长，插件才会开始安排一次主动消息，之后同样交给最小 / 最大触发间隔去随机决定具体发送时刻。需要注意的是，如果群聊在插件启动后始终没有任何消息，则会先由「自动主动消息」在 `auto_trigger_after_minutes` 后直接补建任务，此时并不会经过这个沉默计时。
+>
+> 所以，如果你把自动触发等待时间设成 1 分钟却还是收不到消息，通常不是插件坏了，而是下面几种正常情况之一：
+>
+> - 这个会话中途收到过消息，自动触发已经被取消（这是设计行为）；
+> - 任务其实已经建好了，但真正发送还要等最小 / 最大触发间隔里随机出来的那个时间；
+> - 当前正好处于免打扰时段，主动消息被跳过并重新安排了下一次发送。
+>
+> 一句话总结：**想让 Bot 更快发消息，请优先调小「最小 / 最大触发间隔」；而「自动主动消息」只负责在插件刚启动、会话还很安静时，帮你把等待的循环先跑起来。**
+
+</details>
+
+<details>
+<summary>Q: 不支持我使用的平台怎么办？</summary>
 
 >**A**: 主动消息能力基于 AstrBot 框架，如果框架本身不支持相应适配器的主动消息能力，插件侧无能为力
 >
 > 1. 相关功能请求请前往 [AstrBot](https://github.com/AstrBotDevs/AstrBot) 主仓库提出。
 > 2. 如果 AstrBot 适配了新平台的主动消息能力，可以反馈给插件侧进行适配检查。
 
-**Q: 报错信息 ApiNotAvailable？**
+</details>
+
+<details>
+<summary>Q: 报错信息 ApiNotAvailable？</summary>
 
 >**A**: 目前所有已知信息都指向 `ApiNotAvailable` 不是插件本身的 bug，而是底层 OneBot 适配器和物理机器人（NapCat/Lagrange 等）之间的连接异常。
 > 常见诱因包括：机器人掉线但平台未检测、心跳包间隔过长被路由器/防火墙掐断、后台有僵尸/未连接的平台配置项、甚至浏览器节能模式影响 WebSocket 页面（Edge 有案例，但不是唯一原因）。
@@ -1573,13 +1608,19 @@ flowchart LR
 > 如果能抓到出错时的 OneBot 客户端详细日志，或在不同网络环境/设备/浏览器下对比测试，可能有助于进一步定位。
 > 这个问题本质上属于“物理机器人与平台连接不稳定”，代码层面已做了轮询和容错，剩下的只能靠环境排查。
 
-**报错信息 No cached msg_id / 请求参数msg_id无效或越权 ？**
+</details>
+
+<details>
+<summary>报错信息 No cached msg_id / 请求参数msg_id无效或越权？</summary>
 
 >**A**: QQ 官方机器人进行主动消息请使用大于等于 v4.22.1 的 AstrBot 版本。
 >
 > 使用 QQ 官机时，注意不要像个人号那样填写 QQ 号，应填写 UID，可使用指令 `/sid` 获取，格式类似 `4C011A2B3D4C5E6F9F8E7D6C5B4A3210`。
 
-**Q: 主动消息触发时间不准确？**
+</details>
+
+<details>
+<summary>Q: 主动消息触发时间不准确？</summary>
 
 > **A**: 请检查：
 >
@@ -1587,7 +1628,10 @@ flowchart LR
 > 2. 免打扰时段设置是否影响了触发时间。
 > 3. 最小/最大间隔时间设置是否合理。
 
-**Q: 为什么 Bot 突然停止主动发消息了？**
+</details>
+
+<details>
+<summary>Q: 为什么 Bot 突然停止主动发消息了？</summary>
 
 > **A**: 可能原因：
 >
@@ -1596,7 +1640,10 @@ flowchart LR
 > 3. 插件配置被意外修改或禁用。
 > 4. 检查控制台日志了解具体原因。
 
-**Q: 主动消息的效果不理想，很生硬？**
+</details>
+
+<details>
+<summary>Q: 主动消息的效果不理想，很生硬？</summary>
 
 > **A**: 主动消息质量主要取决于 Prompt 设计，建议：
 >
@@ -1606,7 +1653,10 @@ flowchart LR
 > 4. 在 Prompt 中明确告诉 Bot 应该扮演什么角色。
 > 5. 使用能力更强的模型。
 
-**Q: Bot 的主动消息会重复或说奇怪的话？**
+</details>
+
+<details>
+<summary>Q: Bot 的主动消息会重复或说奇怪的话？</summary>
 
 > **A**: 这是因为 LLM 的随机性，可以尝试：
 >
@@ -1615,24 +1665,33 @@ flowchart LR
 > 3. 调整 Temperature 参数（如果支持）。
 > 4. 提供更清晰的行为指导和输出格式要求。
 
+</details>
+
 ### 🔍 日志与调试
 
-**Q: 如何查看插件的运行状态？**
+<details>
+<summary>Q: 如何查看插件的运行状态？</summary>
 
-> **A**: 在 AstrBot 控制台可以看到插件的详细运行日志，包括任务创建、触发、取消等信息。
+> **A**: 在 AstrBot 控制台可以看到插件的详细运行日志，包括任务创建、触发、取消等信息。插件自带的 WebUI 也提供了良好的可视化界面。
 
 > [!TIP]
 > 由于 AstrBot 的 Bug[#3903](https://github.com/AstrBotDevs/AstrBot/issues/3903)，AstrBot WebUI 控制台输出的日志在本插件的使用场景下**可能会**出现显示问题，丢失部分日志。如果要在控制台中查看完整的插件日志记录，请重新刷新 WebUI 控制台或直接查看 CMD 窗口。
 >
 > 该 Bug 已于 AstrBot v4.9.0 中修复，推荐使用大于等于该版本的 AstrBot 运行本插件。
 
-**Q: 日志中出现错误信息怎么办？**
+</details>
+
+<details>
+<summary>Q: 日志中出现错误信息怎么办？</summary>
 
 > **A**: 将完整的错误日志复制下来，包括错误类型和堆栈信息，可以在 QQ 群（1033089808）中寻求帮助，或在 GitHub 提交 Issue。
 
+</details>
+
 ### ⚠️ AstrBot 限流机制影响
 
-**Q: 插件突然无法监听群聊消息，缺失相关的任务日志？**
+<details>
+<summary>Q: 插件突然无法监听群聊消息，缺失相关的任务日志？</summary>
 
 > **A**: 这可能是 AstrBot 的限流机制导致的。当群聊消息频率过高时，AstrBot 会暂停消息处理流水线，导致插件无法接收消息事件。
 
@@ -1660,7 +1719,10 @@ flowchart LR
 
 > **技术细节**：限流机制使用 Fixed Window 算法，当会话在指定时间窗口内消息数量超过限额时，会暂停整个消息处理流水线，导致基于消息事件的插件功能失效。
 
-**Q: 如何确认是限流问题而不是插件bug？**
+</details>
+
+<details>
+<summary>Q: 如何确认是限流问题而不是插件bug？</summary>
 
 > **A**: 检查 AstrBot 主日志中是否有类似这样的信息：
 
@@ -1668,17 +1730,27 @@ flowchart LR
   [Core] [INFO] [rate_limit_check.stage:74]: 会话 123456789 被限流。根据限流策略，此会话处理将被暂停 86291.74 秒。
   ```
 
+  ```log
+  [Core] [INFO] [rate_limit_check.stage:76]: Session 123456789 was rate-limited. Processing will pause for 86291.74 seconds according to the rate-limit policy.
+  ```
+
 > 如果有这条日志，基本可以确定是限流问题。重启 AstrBot 后如果插件功能恢复正常，则可以确认诊断。
 
-**Q: 限流问题会重复出现吗？**
+</details>
+
+<details>
+<summary>Q: 限流问题会重复出现吗？</summary>
 
 > **A**: 是的，如果群聊消息频率持续很高，可能会再次触发限流。建议：
 >
 > 1. 适当增加 `count` 值。
-> 2. 将 `strategy` 从 `"stall"` 改为 `"discard"`，避免长时间暂停。
+> 2. 将 `strategy` 从 `stall` 改为 `discard`，避免长时间暂停。
 > 3. 监控群聊消息频率，在活跃时段适当调整配置。
 
-**Q: TTS 语音功能不正常？**
+</details>
+
+<details>
+<summary>Q: TTS 语音功能不正常？</summary>
 
 >**A**: 检查：
 >
@@ -1686,6 +1758,8 @@ flowchart LR
 > 2. AstrBot 的全局 TTS 配置是否正确。
 > 3. TTS 服务提供商是否正常工作。
 > 4. 网络连接是否正常。
+
+</details>
 
 ## 🚧 最新版本的已知限制
 
@@ -1704,8 +1778,9 @@ flowchart LR
 
 我的其他插件：
 
-- [灾害预警(Disaster_Warning)](https://github.com/DBJD-CR/astrbot_plugin_disaster_warning) - 它能让你的 Bot 提供实时的地震、海啸、气象预警信息推送服务。
-- [视奸面板(Live_Dashboard)](https://github.com/DBJD-CR/astrbot_plugin_live_dashboard) - 它能让你的 Bot 和群友可以随时随地视奸你手机和电脑的活动状态。
+- [灾害预警(Disaster_Warning)](https://github.com/Pancakes-Labs/astrbot_plugin_disaster_warning) - 它能让你的 Bot 提供实时的地震、海啸、台风、气象预警信息推送服务。
+- [视奸面板(Live_Dashboard)](https://github.com/Pancakes-Labs/astrbot_plugin_live_dashboard) - 它能让你的 Bot 和群友可以随时随地视奸你手机和电脑的活动状态。
+- [代码统计 (Count_Loc)](https://github.com/Pancakes-Labs/astrbot_plugin_count_loc) - 它能让你的 Bot 对任意公开的 GitHub 或 GitLab 仓库的代码行数、文件数量、注释行数、物理总行数等指标进行快捷获取和分析。
 
 ## 📞 联系我们
 
@@ -1718,7 +1793,7 @@ flowchart LR
 
 ## 🤝 贡献
 
-欢迎提交 [Issue](https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/issues) 和 [Pull Request](https://github.com/DBJD-CR/astrbot_plugin_proactive_chat/pulls) 来改进这个插件！经历了多个版本的迭代，它终于达到了一个稳定且能用的状态，但依然有很大的提升空间。
+欢迎提交 [Issue](https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/issues) 和 [Pull Request](https://github.com/Pancakes-Labs/astrbot_plugin_proactive_chat/pulls) 来改进这个插件！经历了多个版本的迭代，它终于达到了一个稳定且能用的状态，但依然有很大的提升空间。
 
 ## 📄 许可证
 
@@ -1736,4 +1811,10 @@ GNU Affero General Public License v3.0 - 详见 [LICENSE](LICENSE) 文件。
 
 ## <span id="star">⭐️ 星星</span>
 
-[![Star History Chart](https://api.star-history.com/svg?repos=DBJD-CR/astrbot_plugin_proactive_chat&type=Date)](https://www.star-history.com/#DBJD-CR/astrbot_plugin_proactive_chat&Date)
+<a href="https://www.star-history.com/?repos=Pancakes-Labs%2Fastrbot_plugin_proactive_chat&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Pancakes-Labs/astrbot_plugin_proactive_chat&type=date&theme=dark&legend=top-left&sealed_token=08VvlnRcQl_2DPmpGSq3y-p3Vy8HhFW8O3RAfoBw9nPkPpfyBXKJ2t93ne6K_qH5Q2Oq2kEzpBspfo3oYmBPT6vIZPACKUMj3kuC-9TVyBUesL6lChuewQ" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Pancakes-Labs/astrbot_plugin_proactive_chat&type=date&legend=top-left&sealed_token=08VvlnRcQl_2DPmpGSq3y-p3Vy8HhFW8O3RAfoBw9nPkPpfyBXKJ2t93ne6K_qH5Q2Oq2kEzpBspfo3oYmBPT6vIZPACKUMj3kuC-9TVyBUesL6lChuewQ" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Pancakes-Labs/astrbot_plugin_proactive_chat&type=date&legend=top-left&sealed_token=08VvlnRcQl_2DPmpGSq3y-p3Vy8HhFW8O3RAfoBw9nPkPpfyBXKJ2t93ne6K_qH5Q2Oq2kEzpBspfo3oYmBPT6vIZPACKUMj3kuC-9TVyBUesL6lChuewQ" />
+ </picture>
+</a>
