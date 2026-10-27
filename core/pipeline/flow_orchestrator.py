@@ -13,6 +13,7 @@ from astrbot.api import logger
 
 from ...utils.time_utils import is_quiet_time
 from ..adapters.astrbot_conversation import add_message_pair, verify_message_persisted
+from ..adapters.astrbot_pipeline import dispatch_proactive_to_pipeline
 from ..domain.domain_enums import HookPoint, StageResult, TriggerSource
 from ..domain.request_context import ProactiveContext
 from ..domain.session_key import is_friend_type, is_group_type
@@ -109,6 +110,15 @@ class FlowOrchestrator:
             session_config = plugin.config_service.get_session_config(
                 normalized_session_id
             )
+            native_conf = (session_config or {}).get("native_pipeline_settings") or {}
+            if (
+                session_config
+                and native_conf.get("enable")
+                and await self._run_via_native_pipeline(
+                    normalized_session_id, session_config
+                )
+            ):
+                return
             ctx = build_context(
                 normalized_session_id,
                 plugin.session_service.build_session_key(normalized_session_id),
@@ -269,6 +279,34 @@ class FlowOrchestrator:
 
         # 群聊由沉默倒计时驱动，不依赖持久化调度字段，故在成功发送后清理残留状态。
         await self._cleanup_group_schedule_state(normalized_session_id)
+
+    async def _run_via_native_pipeline(
+        self, session_id: str, session_config: dict
+    ) -> bool:
+        """把本次主动消息交给 AstrBot 原生事件流水线处理。
+
+        发送与对话存档由框架完成，插件只维护未回复计数与下一次调度。
+
+        Args:
+            session_id: 规范化后的会话 UMO。
+            session_config: 当前会话的最终配置。
+
+        Returns:
+            True 表示已投递并完成收尾；False 表示应回退到插件自身流程。
+        """
+        plugin = self.plugin
+        unanswered_count = plugin.session_data.get(session_id, {}).get(
+            "unanswered_count", 0
+        )
+        prompt = plugin.llm_service.build_proactive_prompt(
+            session_config, unanswered_count
+        )
+        if not await dispatch_proactive_to_pipeline(plugin, session_id, prompt):
+            logger.warning("[主动消息] 原生流水线不可用，回退插件自身流程喵。")
+            return False
+
+        await self.finalize_and_reschedule(session_id, "", prompt, "", unanswered_count)
+        return True
 
     async def clear_manual_trigger_state(self, session_id: str) -> None:
         """释放指定会话的手动触发占用状态，并向管理端广播任务刷新。"""

@@ -11,6 +11,7 @@ import uuid
 from typing import Any
 
 from astrbot.api import logger
+from astrbot.core.message.components import Plain
 from astrbot.core.message.message_event_result import MessageChain
 from astrbot.core.platform.astrbot_message import AstrBotMessage, Group, MessageMember
 from astrbot.core.platform.message_type import MessageType
@@ -409,9 +410,53 @@ def build_proactive_event_for_session(
     )
 
 
+def build_pipeline_event_for_session(
+    *,
+    plugin: Any,
+    session_id: str,
+    text: str,
+    wake_prefix: str = "",
+    provider_prefix: str = "",
+) -> ProactiveMessageEvent | None:
+    """构造一个可进入 AstrBot 原生流水线的伪用户事件。
+
+    群聊需要唤醒前缀才能通过 WakingCheckStage，因此按 wake_prefix +
+    provider_prefix + 正文 的顺序拼接；两个 stage 会各自把前缀剥离。
+
+    Args:
+        plugin: 插件实例。
+        session_id: 会话 UMO。
+        text: 要作为用户消息送入流水线的文本。
+        wake_prefix: AstrBot 全局唤醒前缀（群聊必需）。
+        provider_prefix: provider 唤醒前缀，会被 LLM 阶段剥离。
+
+    Returns:
+        伪事件；无法解析会话标识时返回 None。
+    """
+    event = build_proactive_event_for_session(plugin=plugin, session_id=session_id)
+    if event is None:
+        return None
+
+    message_str = f"{provider_prefix}{text}"
+    if is_group_umo(session_id) and wake_prefix:
+        message_str = f"{wake_prefix}{message_str}"
+
+    event.message_str = message_str
+    event.is_wake = True
+    event.is_at_or_wake_command = True
+
+    message_obj = getattr(event, "message_obj", None)
+    if message_obj is not None:
+        message_obj.message_str = message_str
+        # 唤醒阶段会读取首条消息段，必须保证 message 非空。
+        message_obj.message = [Plain(text=message_str)]
+    return event
+
+
 __all__ = [
     "PROACTIVE_MESSAGE_ID_PREFIX",
     "ProactiveMessageEvent",
+    "build_pipeline_event_for_session",
     "build_proactive_event",
     "build_proactive_event_for_session",
     "dispatch_event_hook",

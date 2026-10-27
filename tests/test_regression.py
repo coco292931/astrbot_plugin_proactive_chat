@@ -205,9 +205,15 @@ sys.path.insert(0, str(PLUGIN_ROOT.parent))
 from astrbot_plugin_proactive_chat.core.adapters.astrbot_conversation import (  # noqa: E402
     add_message_pair,
 )
+from astrbot_plugin_proactive_chat.core.adapters.astrbot_event import (  # noqa: E402
+    build_pipeline_event_for_session,
+)
 from astrbot_plugin_proactive_chat.core.adapters.astrbot_main_agent import (  # noqa: E402
     _build_config,
     run_main_agent,
+)
+from astrbot_plugin_proactive_chat.core.adapters.astrbot_pipeline import (  # noqa: E402
+    dispatch_proactive_to_pipeline,
 )
 from astrbot_plugin_proactive_chat.core.domain.domain_enums import (  # noqa: E402
     StageResult,
@@ -567,6 +573,15 @@ class LlmServiceRoutingTest(unittest.TestCase):
         self.assertEqual(args[1], "provider")
         self.assertEqual(args[4], SESSION_ID)
 
+    def test_build_proactive_prompt_replaces_placeholders(self) -> None:
+        service = self._service()
+        text = service.build_proactive_prompt(
+            {"proactive_prompt": "次数={{unanswered_count}} 时间={{current_time}}"},
+            3,
+        )
+        self.assertIn("次数=3", text)
+        self.assertNotIn("{{", text)
+
     def test_agent_failure_falls_back(self) -> None:
         response = SimpleNamespace(completion_text="回退成功", result_chain=None)
         agent_mock = AsyncMock(side_effect=RuntimeError("boom"))
@@ -587,6 +602,86 @@ class LlmServiceRoutingTest(unittest.TestCase):
         self.assertIs(result, response)
         self.assertEqual(agent_mock.await_count, 1)
         self.assertEqual(provider_mock.await_count, 1)
+
+
+class NativePipelineTest(unittest.TestCase):
+    """原生事件流水线：事件构造与投递。"""
+
+    def _event(self) -> Any:
+        return SimpleNamespace(
+            message_str="",
+            is_wake=False,
+            is_at_or_wake_command=False,
+            message_obj=SimpleNamespace(message=[], message_str=""),
+        )
+
+    def test_event_composes_group_prefixes(self) -> None:
+        event = self._event()
+        with patch(
+            "astrbot_plugin_proactive_chat.core.adapters.astrbot_event."
+            "build_proactive_event_for_session",
+            return_value=event,
+        ):
+            built = build_pipeline_event_for_session(
+                plugin=None,
+                session_id="default:GroupMessage:42",
+                text="文案",
+                wake_prefix="/",
+                provider_prefix="!",
+            )
+
+        self.assertEqual(built.message_str, "/!文案")
+        self.assertEqual(built.message_obj.message_str, "/!文案")
+        self.assertEqual(built.message_obj.message[0].text, "/!文案")
+        self.assertTrue(built.is_wake)
+
+    def test_event_skips_wake_prefix_in_private(self) -> None:
+        event = self._event()
+        with patch(
+            "astrbot_plugin_proactive_chat.core.adapters.astrbot_event."
+            "build_proactive_event_for_session",
+            return_value=event,
+        ):
+            built = build_pipeline_event_for_session(
+                plugin=None,
+                session_id=SESSION_ID,
+                text="文案",
+                wake_prefix="/",
+                provider_prefix="!",
+            )
+
+        self.assertEqual(built.message_str, "!文案")
+
+    def test_dispatch_returns_false_without_queue(self) -> None:
+        plugin = SimpleNamespace(context=SimpleNamespace())
+
+        result = asyncio.run(dispatch_proactive_to_pipeline(plugin, SESSION_ID, "文案"))
+
+        self.assertFalse(result)
+
+    def test_dispatch_enqueues_event(self) -> None:
+        queue: asyncio.Queue = asyncio.Queue()
+        plugin = SimpleNamespace(
+            context=SimpleNamespace(
+                get_event_queue=lambda: queue,
+                get_config=lambda umo: {
+                    "wake_prefix": ["/"],
+                    "platform_settings": {"provider_wake_prefix": ""},
+                },
+            )
+        )
+        event = SimpleNamespace()
+        with patch(
+            "astrbot_plugin_proactive_chat.core.adapters.astrbot_pipeline."
+            "build_pipeline_event_for_session",
+            return_value=event,
+        ):
+            result = asyncio.run(
+                dispatch_proactive_to_pipeline(plugin, SESSION_ID, "文案")
+            )
+
+        self.assertTrue(result)
+        self.assertIs(queue.get_nowait(), event)
 
 
 class HistoryWriteTest(unittest.TestCase):
@@ -617,6 +712,14 @@ class ConfigAndRegistryTest(unittest.TestCase):
             self.assertLessEqual(required, set(items["agent_settings"]["items"]))
             self.assertFalse(items["agent_settings"]["items"]["enable"]["default"])
 
+    def test_native_pipeline_settings_present(self) -> None:
+        for section in ("friend_settings", "group_settings"):
+            items = self.schema[section]["items"]
+            self.assertIn("native_pipeline_settings", items)
+            self.assertFalse(
+                items["native_pipeline_settings"]["items"]["enable"]["default"]
+            )
+
     def test_suppression_settings_kept(self) -> None:
         for section in ("friend_settings", "group_settings"):
             self.assertIn(
@@ -625,6 +728,7 @@ class ConfigAndRegistryTest(unittest.TestCase):
 
     def test_override_allowlist_covers_new_keys(self) -> None:
         self.assertIn("agent_settings", OverrideStore.ALLOWED_ROOT_KEYS)
+        self.assertIn("native_pipeline_settings", OverrideStore.ALLOWED_ROOT_KEYS)
         self.assertIn("response_suppression_settings", OverrideStore.ALLOWED_ROOT_KEYS)
 
     def test_no_legacy_module_imports(self) -> None:

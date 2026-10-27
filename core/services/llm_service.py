@@ -58,6 +58,15 @@ class LlmService:
 
         return "<dynamic_context>\n" + "\n".join(lines) + "\n</dynamic_context>"
 
+    def build_proactive_prompt(
+        self, session_config: dict, unanswered_count: int
+    ) -> str:
+        """渲染主动消息提示词中的时间与未回复次数占位符。"""
+        template = (session_config or {}).get("proactive_prompt", "") or ""
+        return template.replace("{{unanswered_count}}", str(unanswered_count)).replace(
+            "{{current_time}}", format_current_time(self.plugin.timezone)
+        )
+
     def build_extra_content_parts(
         self,
         platform_context: str,
@@ -150,10 +159,9 @@ class LlmService:
         """统一 LLM 调用入口。"""
         plugin = self.plugin
         motivation_template = session_config.get("proactive_prompt", "") or ""
-        now_str = format_current_time(plugin.timezone)
-        final_user_simulation_prompt = motivation_template.replace(
-            "{{unanswered_count}}", str(unanswered_count)
-        ).replace("{{current_time}}", now_str)
+        final_user_simulation_prompt = self.build_proactive_prompt(
+            session_config, unanswered_count
+        )
 
         logger.debug("[主动消息] 已生成包含动机和时间的 Prompt 喵。")
 

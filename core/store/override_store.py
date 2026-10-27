@@ -24,6 +24,7 @@ class OverrideStore:
         "enable",
         "session_name",
         "proactive_prompt",
+        "native_pipeline_settings",
         "agent_settings",
         "response_suppression_settings",
         "context_settings",
