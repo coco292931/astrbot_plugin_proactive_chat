@@ -86,6 +86,18 @@
                             "max": 300,
                             "step": 5
                         }
+                    },
+                    "sender_id": {
+                        "description": "👤 代理发送者 ID",
+                        "type": "string",
+                        "default": "",
+                        "hint": "主动消息没有真实发送者，仅管理员可用的工具会因此被拒绝。填写后将以该 ID 作为消息发送者并参与管理员判定；留空时私聊使用对方 ID、群聊为空"
+                    },
+                    "run_as_admin": {
+                        "description": "🔑 强制以管理员身份运行工具",
+                        "type": "bool",
+                        "default": false,
+                        "hint": "忽略发送者 ID，直接让伪事件以管理员身份运行，使仅管理员可用的工具可用；请确认这符合你的安全预期"
                     }
                 }
             },
@@ -426,6 +438,18 @@
                             "max": 300,
                             "step": 5
                         }
+                    },
+                    "sender_id": {
+                        "description": "👤 代理发送者 ID",
+                        "type": "string",
+                        "default": "",
+                        "hint": "主动消息没有真实发送者，仅管理员可用的工具会因此被拒绝。填写后将以该 ID 作为消息发送者并参与管理员判定；留空时私聊使用对方 ID、群聊为空"
+                    },
+                    "run_as_admin": {
+                        "description": "🔑 强制以管理员身份运行工具",
+                        "type": "bool",
+                        "default": false,
+                        "hint": "忽略发送者 ID，直接让伪事件以管理员身份运行，使仅管理员可用的工具可用；请确认这符合你的安全预期"
                     }
                 }
             },

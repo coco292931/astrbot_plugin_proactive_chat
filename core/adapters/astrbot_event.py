@@ -95,6 +95,59 @@ def resolve_sender_hint(plugin: Any, umo: str) -> tuple[str, str]:
     return "", ""
 
 
+def resolve_sender_role(
+    plugin: Any,
+    session_id: str,
+    sender_id: str,
+    is_group: bool,
+) -> tuple[str, str]:
+    """解析伪事件的发送者与角色。
+
+    私聊下按 admins_id 自动判定管理员；群聊没有真实发送者，需显式配置
+    agent_settings.sender_id 或 agent_settings.run_as_admin。
+
+    Args:
+        plugin: 插件实例。
+        session_id: 会话 UMO。
+        sender_id: 已解析出的发送者 ID，可能为空。
+        is_group: 是否为群聊会话。
+
+    Returns:
+        (发送者 ID, role)，role 只会是 admin 或 member。
+    """
+    agent_conf: dict[str, Any] = {}
+    config_service = getattr(plugin, "config_service", None)
+    if config_service is not None:
+        try:
+            session_config = config_service.get_session_config(session_id) or {}
+            agent_conf = session_config.get("agent_settings") or {}
+        except Exception:
+            agent_conf = {}
+
+    override_sender = str(agent_conf.get("sender_id") or "").strip()
+    has_override = bool(override_sender)
+    if has_override:
+        sender_id = override_sender
+
+    if agent_conf.get("run_as_admin"):
+        return sender_id, "admin"
+
+    # 群聊默认发送者只是占位，不参与管理员判定，避免误提权；
+    # 显式配置 sender_id 时仍按该 ID 判定。
+    if is_group and not has_override:
+        return sender_id, "member"
+
+    admins: set[str] = set()
+    try:
+        global_cfg = plugin.context.get_config(umo=session_id) or {}
+        admins = {str(item) for item in (global_cfg.get("admins_id") or [])}
+    except Exception:
+        admins = set()
+
+    role = "admin" if sender_id and str(sender_id) in admins else "member"
+    return sender_id, role
+
+
 async def dispatch_event_hook(
     event: Any,
     hook_type: Any,
@@ -168,6 +221,7 @@ class ProactiveMessageEvent(_EventBase):  # type: ignore[misc, valid-type]
         sender_name: str = "",
         is_group: bool = False,
         persist_history: Any = None,
+        role: str = "member",
     ) -> None:
         # 注意：基类 __init__ 内部会读取 self.unified_msg_origin，
         # 因此这些被重写属性依赖的字段必须在 super().__init__() 之前完成赋值。
@@ -204,7 +258,7 @@ class ProactiveMessageEvent(_EventBase):  # type: ignore[misc, valid-type]
         self.plugins_name = None
         self.is_wake = True
         self.is_at_or_wake_command = True
-        self.role = "member"
+        self.role = role
 
     # ------------------------------------------------------------------
     # 会话标识
@@ -327,6 +381,7 @@ def build_proactive_event(
     sender_id: str = "",
     sender_name: str = "",
     persist_history: Any = None,
+    role: str = "member",
 ) -> ProactiveMessageEvent | None:
     """构建主动消息伪事件。"""
     if AstrMessageEvent is None:  # pragma: no cover - 极旧版本
@@ -360,6 +415,7 @@ def build_proactive_event(
             sender_name=sender_name,
             is_group=is_group,
             persist_history=persist_history,
+            role=role,
         )
     except Exception as e:  # pragma: no cover - 防御性兜底
         logger.error(f"[主动消息] 构造事件对象失败喵: {e}")
@@ -396,6 +452,11 @@ def build_proactive_event_for_session(
     platform_inst = resolve_platform_instance(manager, platform_id)
     self_id = resolve_self_id(plugin, session_id)
     sender_id, sender_name = resolve_sender_hint(plugin, session_id)
+    is_group = is_group_umo(session_id)
+    effective_sender = sender_id or ("" if is_group else target_id)
+    sender_id, role = resolve_sender_role(
+        plugin, session_id, effective_sender, is_group
+    )
 
     return build_proactive_event(
         plugin=plugin,
@@ -407,6 +468,7 @@ def build_proactive_event_for_session(
         sender_id=sender_id,
         sender_name=sender_name,
         persist_history=persist_history,
+        role=role,
     )
 
 
@@ -464,4 +526,5 @@ __all__ = [
     "resolve_platform_instance",
     "resolve_self_id",
     "resolve_sender_hint",
+    "resolve_sender_role",
 ]

@@ -207,6 +207,7 @@ from astrbot_plugin_proactive_chat.core.adapters.astrbot_conversation import (  
 )
 from astrbot_plugin_proactive_chat.core.adapters.astrbot_event import (  # noqa: E402
     build_pipeline_event_for_session,
+    resolve_sender_role,
 )
 from astrbot_plugin_proactive_chat.core.adapters.astrbot_main_agent import (  # noqa: E402
     _build_config,
@@ -682,6 +683,53 @@ class NativePipelineTest(unittest.TestCase):
 
         self.assertTrue(result)
         self.assertIs(queue.get_nowait(), event)
+
+
+class SenderRoleTest(unittest.TestCase):
+    """伪事件发送者与管理员身份解析。"""
+
+    def _plugin(self, admins: list, agent_conf: dict | None = None) -> Any:
+        return SimpleNamespace(
+            config_service=SimpleNamespace(
+                get_session_config=lambda sid: {"agent_settings": agent_conf or {}}
+            ),
+            context=SimpleNamespace(get_config=lambda umo: {"admins_id": admins}),
+        )
+
+    def test_private_admin_sender_is_admin(self) -> None:
+        plugin = self._plugin(["10001"])
+
+        sender, role = resolve_sender_role(plugin, SESSION_ID, "10001", False)
+
+        self.assertEqual((sender, role), ("10001", "admin"))
+
+    def test_private_normal_sender_is_member(self) -> None:
+        plugin = self._plugin(["10001"])
+
+        _, role = resolve_sender_role(plugin, SESSION_ID, "20002", False)
+
+        self.assertEqual(role, "member")
+
+    def test_group_sender_is_not_auto_elevated(self) -> None:
+        plugin = self._plugin(["10001"])
+
+        _, role = resolve_sender_role(plugin, "default:GroupMessage:1", "10001", True)
+
+        self.assertEqual(role, "member")
+
+    def test_group_sender_override_grants_admin(self) -> None:
+        plugin = self._plugin(["10001"], {"sender_id": "10001"})
+
+        sender, role = resolve_sender_role(plugin, "default:GroupMessage:1", "", True)
+
+        self.assertEqual((sender, role), ("10001", "admin"))
+
+    def test_run_as_admin_forces_admin(self) -> None:
+        plugin = self._plugin([], {"run_as_admin": True})
+
+        _, role = resolve_sender_role(plugin, "default:GroupMessage:1", "", True)
+
+        self.assertEqual(role, "admin")
 
 
 class HistoryWriteTest(unittest.TestCase):
