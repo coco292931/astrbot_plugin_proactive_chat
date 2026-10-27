@@ -49,6 +49,9 @@ _EventBase: Any = AstrMessageEvent if AstrMessageEvent is not None else object
 # 伪消息 ID 前缀：便于在日志与平台流水中区分主动消息与真实用户消息。
 PROACTIVE_MESSAGE_ID_PREFIX = "proactive"
 
+# 标记事件由插件注入原生流水线，供插件自身监听器跳过。
+NATIVE_PIPELINE_EXTRA_KEY = "proactive_native_pipeline"
+
 
 def resolve_message_type(umo: str) -> MessageType:
     """根据 UMO 推断标准 MessageType（群聊或私聊）。"""
@@ -512,10 +515,15 @@ def build_pipeline_event_for_session(
         message_obj.message_str = message_str
         # 唤醒阶段会读取首条消息段，必须保证 message 非空。
         message_obj.message = [Plain(text=message_str)]
+
+    set_extra = getattr(event, "set_extra", None)
+    if callable(set_extra):
+        set_extra(NATIVE_PIPELINE_EXTRA_KEY, True)
     return event
 
 
 __all__ = [
+    "NATIVE_PIPELINE_EXTRA_KEY",
     "PROACTIVE_MESSAGE_ID_PREFIX",
     "ProactiveMessageEvent",
     "build_pipeline_event_for_session",

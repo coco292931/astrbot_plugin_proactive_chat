@@ -13,6 +13,15 @@ from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent
 
 from ..domain.session_key import contains_group_marker
+from .astrbot_event import NATIVE_PIPELINE_EXTRA_KEY
+
+
+def _is_native_pipeline_event(event: Any) -> bool:
+    """判断事件是否由插件自己注入原生流水线。"""
+    getter = getattr(event, "get_extra", None)
+    if not callable(getter):
+        return False
+    return bool(getter(NATIVE_PIPELINE_EXTRA_KEY))
 
 
 class EventHandlers:
@@ -76,6 +85,10 @@ class EventHandlers:
     async def on_friend_message(self, event: AstrMessageEvent) -> None:
         """处理私聊消息：记录时间、取消调度、重置计数并重新排期。"""
         if not event.get_messages():
+            return
+
+        if _is_native_pipeline_event(event):
+            logger.debug("[主动消息] 跳过插件自身注入的原生流水线事件喵。")
             return
 
         session_id = event.unified_msg_origin
@@ -171,6 +184,10 @@ class EventHandlers:
         会先剔除 Bot 自身消息，避免把机器人发言误判为用户活跃。
         """
         if not event.get_messages():
+            return
+
+        if _is_native_pipeline_event(event):
+            logger.debug("[主动消息] 跳过插件自身注入的原生流水线事件喵。")
             return
 
         session_id = event.unified_msg_origin

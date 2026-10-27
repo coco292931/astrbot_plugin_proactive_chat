@@ -126,6 +126,9 @@ def _install_astrbot_stubs() -> None:
     class AstrBotMessage:
         pass
 
+    class AstrMessageEvent:
+        pass
+
     class Group:
         def __init__(self, group_id: str = "") -> None:
             self.group_id = group_id
@@ -145,6 +148,9 @@ def _install_astrbot_stubs() -> None:
         "astrbot.api": _module("astrbot.api", logger=_make_logger()),
         "astrbot.api.provider": _module(
             "astrbot.api.provider", ProviderRequest=ProviderRequest
+        ),
+        "astrbot.api.event": _module(
+            "astrbot.api.event", AstrMessageEvent=AstrMessageEvent
         ),
         "astrbot.core": _module("astrbot.core"),
         "astrbot.core.agent": _module("astrbot.core.agent"),
@@ -215,6 +221,9 @@ from astrbot_plugin_proactive_chat.core.adapters.astrbot_main_agent import (  # 
 )
 from astrbot_plugin_proactive_chat.core.adapters.astrbot_pipeline import (  # noqa: E402
     dispatch_proactive_to_pipeline,
+)
+from astrbot_plugin_proactive_chat.core.adapters.event_handlers import (  # noqa: E402
+    EventHandlers,
 )
 from astrbot_plugin_proactive_chat.core.domain.domain_enums import (  # noqa: E402
     StageResult,
@@ -609,12 +618,21 @@ class NativePipelineTest(unittest.TestCase):
     """原生事件流水线：事件构造与投递。"""
 
     def _event(self) -> Any:
-        return SimpleNamespace(
-            message_str="",
-            is_wake=False,
-            is_at_or_wake_command=False,
-            message_obj=SimpleNamespace(message=[], message_str=""),
-        )
+        class _EventStub:
+            def __init__(self) -> None:
+                self.message_str = ""
+                self.is_wake = False
+                self.is_at_or_wake_command = False
+                self.message_obj = SimpleNamespace(message=[], message_str="")
+                self._extras: dict = {}
+
+            def set_extra(self, key: str, value: Any) -> None:
+                self._extras[key] = value
+
+            def get_extra(self, key: str, default: Any = None) -> Any:
+                return self._extras.get(key, default)
+
+        return _EventStub()
 
     def test_event_composes_group_prefixes(self) -> None:
         event = self._event()
@@ -635,6 +653,7 @@ class NativePipelineTest(unittest.TestCase):
         self.assertEqual(built.message_obj.message_str, "/!文案")
         self.assertEqual(built.message_obj.message[0].text, "/!文案")
         self.assertTrue(built.is_wake)
+        self.assertTrue(built.get_extra("proactive_native_pipeline"))
 
     def test_event_skips_wake_prefix_in_private(self) -> None:
         event = self._event()
@@ -683,6 +702,29 @@ class NativePipelineTest(unittest.TestCase):
 
         self.assertTrue(result)
         self.assertIs(queue.get_nowait(), event)
+
+
+class SelfInjectedEventTest(unittest.TestCase):
+    """插件自身监听会跳过自己注入的事件。"""
+
+    def _event(self) -> Any:
+        return SimpleNamespace(
+            get_messages=lambda: [object()],
+            get_extra=lambda key, default=None: (
+                True if key == "proactive_native_pipeline" else default
+            ),
+            unified_msg_origin=SESSION_ID,
+        )
+
+    def test_friend_handler_skips_injected_event(self) -> None:
+        handlers = EventHandlers(plugin=None)
+
+        asyncio.run(handlers.on_friend_message(self._event()))
+
+    def test_group_handler_skips_injected_event(self) -> None:
+        handlers = EventHandlers(plugin=None)
+
+        asyncio.run(handlers.on_group_message(self._event()))
 
 
 class SenderRoleTest(unittest.TestCase):
